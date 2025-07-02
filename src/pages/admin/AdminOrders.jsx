@@ -8,9 +8,10 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
-import { Pagination, Stack } from '@mui/material';
+import { Pagination, Stack, Button, Typography } from '@mui/material';
 import Loader from '../../components/Loader';
 import { FaDownload } from 'react-icons/fa';
+import CancelRequests from '../../components/admin/CancelRequests'
 
 const AdminOrders = ({ scrollRef }) => {
   const { theme } = useTheme();
@@ -21,6 +22,7 @@ const AdminOrders = ({ scrollRef }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
+  const [activeTab, setActiveTab] = useState('orders');
   const ordersPerPage = 10;
   const socketRef = useRef(null);
 
@@ -58,7 +60,7 @@ const AdminOrders = ({ scrollRef }) => {
         `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${orderId}/download`,
         {
           headers: { Authorization: `Bearer ${token}` },
-          responseType: 'blob', 
+          responseType: 'blob',
         }
       );
 
@@ -75,7 +77,7 @@ const AdminOrders = ({ scrollRef }) => {
     } catch (error) {
       console.error('Error downloading order:', error);
       showToast('Failed to download order', 'error');
-    } finally{
+    } finally {
       setDownloadingId(null);
     }
   };
@@ -122,7 +124,9 @@ const AdminOrders = ({ scrollRef }) => {
       });
     }
 
-    fetchOrders();
+    if (activeTab === 'orders') {
+      fetchOrders();
+    }
 
     return () => {
       if (socketRef.current) {
@@ -132,7 +136,7 @@ const AdminOrders = ({ scrollRef }) => {
         socketRef.current = null;
       }
     };
-  }, [user, navigate, page]);
+  }, [user, navigate, page, activeTab]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -147,8 +151,8 @@ const AdminOrders = ({ scrollRef }) => {
     }
   };
 
-  const getAvatarUrl = (order) => {
-    return order?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(order.name)}`;
+  const getAvatarUrl = (item) => {
+    return item?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}`;
   };
 
   return (
@@ -156,101 +160,135 @@ const AdminOrders = ({ scrollRef }) => {
       <Sidebar />
       <div className="ml-16 mt-2 p-6 flex flex-col flex-grow">
         <TopBar />
-        <h1 className={`text-3xl font-bold mb-6 ${theme === 'light' ? 'text-black' : 'text-white'}`}>
-          Orders
-          <div className="w-16 h-1 bg-[#646cff] mt-2"></div>
-        </h1>
-        {loading && <Loader />}
-        <div className="space-y-4 flex-grow">
-          {orders?.map((order) => (
-            <div
-              key={order._id}
-              className={`flex flex-wrap sm:flex-nowrap items-start gap-4 p-4 rounded-lg transform transition-transform duration-200 hover:-translate-x-1 relative ${
-                theme === 'light' ? 'bg-white shadow-sm' : 'bg-gray-800 shadow-md'
-              }`}
-            >
-              <img
-                src={getAvatarUrl(order)}
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(order.name)}`;
-                }}
-                alt={order.name}
-                className="w-10 h-10 rounded-full"
-              />
-              <div className="flex flex-col min-w-0 w-full">
-                <p className={`font-semibold break-words ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>
-                  {order.name} ({order.email})
-                </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Phone: {order.phone}
-                </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Project Type: {order.projectType}
-                </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Budget: {order.projectBudget}
-                </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Timeline: {new Date(order.timeline).toLocaleDateString()}
-                </p>
-                <p className={`text-sm break-words ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Description: {order.projectDescription}
-                </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Payment Reference: {order.paymentReference}
-                </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Payment Method: {order.paymentMethod}
-                </p>
-                <p className={`text-sm break-words whitespace-normal ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Files: {order.filesList}
-                </p>
-                <p className={`text-xs pt-1 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
-                  Created: {new Date(order.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-              <button
-                onClick={() => handleDownload(order._id)}
-                disabled={downloadingId === order._id}
-                className={`absolute top-2 right-2 p-2 rounded-full
-                  ${downloadingId === order._id
-                    ? 'text-gray-400 bg-gray-200 cursor-not-allowed' 
-                    : theme === 'light'
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-8 mb-6 relative">
+        <div onClick={() => setActiveTab('orders')} className="cursor-pointer">
+          <h1
+            className={`text-2xl sm:text-3xl font-bold ${
+              theme === 'light' ? 'text-black' : 'text-white'
+            } ${activeTab === 'orders' ? 'text-[#646cff]' : ''}`}
+          >
+            Orders
+          </h1>
+          {activeTab === 'orders' && (
+            <div className="w-16 h-1 bg-[#646cff] mt-1 rounded"></div>
+          )}
+        </div>
+
+        <Typography
+          variant="h4"
+          className={`${theme === 'light' ? 'text-black' : 'text-white'} font-bold hidden sm:block`}
+        >
+          /
+        </Typography>
+
+        <div onClick={() => setActiveTab('cancel-requests')} className="cursor-pointer">
+          <h1
+            className={`text-2xl sm:text-3xl font-bold ${
+              theme === 'light' ? 'text-black' : 'text-white'
+            } ${activeTab === 'cancel-requests' ? 'text-[#646cff]' : ''}`}
+          >
+            Cancel Requests
+          </h1>
+          {activeTab === 'cancel-requests' && (
+            <div className="w-24 h-1 bg-[#646cff] mt-1 rounded"></div>
+          )}
+        </div>
+      </div>
+        {activeTab === 'orders' ? (
+          <div className="space-y-4 flex-grow">
+            {loading && <Loader />}
+            {orders?.map((order) => (
+              <div
+                key={order._id}
+                className={`flex flex-wrap sm:flex-nowrap items-start gap-4 p-4 rounded-lg transform transition-transform duration-200 hover:-translate-x-1 relative ${
+                  theme === 'light' ? 'bg-white shadow-sm' : 'bg-gray-800 shadow-md'
+                }`}
+              >
+                <img
+                  src={getAvatarUrl(order)}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(order.name)}`;
+                  }}
+                  alt={order.name}
+                  className="w-10 h-10 rounded-full"
+                />
+                <div className="flex flex-col min-w-0 w-full">
+                  <p className={`font-semibold break-words ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>
+                    {order.name} ({order.email})
+                  </p>
+                  <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Phone: {order.phone}
+                  </p>
+                  <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Project Type: {order.projectType}
+                  </p>
+                  <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Budget: {order.projectBudget}
+                  </p>
+                  <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Timeline: {new Date(order.timeline).toLocaleDateString()}
+                  </p>
+                  <p className={`text-sm break-words ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Description: {order.projectDescription}
+                  </p>
+                  <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Payment Reference: {order.paymentReference}
+                  </p>
+                  <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Payment Method: {order.paymentMethod}
+                  </p>
+                  <p className={`text-sm break-words whitespace-normal ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                    Files: {order.filesList}
+                  </p>
+                  <p className={`text-xs pt-1 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
+                    Created: {new Date(order.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDownload(order._id)}
+                  disabled={downloadingId === order._id}
+                  className={`absolute top-2 right-2 p-2 rounded-full
+                    ${downloadingId === order._id
+                      ? 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                      : theme === 'light'
                       ? 'text-blue-500 hover:bg-blue-100'
                       : 'text-blue-400 hover:bg-gray-700'
-                  }`}
-                title="Download Order"
-              >
-                <FaDownload className="text-xl" />
-              </button>
+                    }`}
+                  title="Download Order"
+                >
+                  <FaDownload className="text-xl" />
+                </button>
+              </div>
+            ))}
+            <div className="mt-6">
+              <Stack spacing={2} alignItems="center">
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={handlePageChange}
+                  variant="outlined"
+                  shape="rounded"
+                  sx={{
+                    '& .MuiPaginationItem-root': {
+                      color: theme === 'light' ? '#000' : '#fff',
+                      backgroundColor: theme === 'light' ? '#fff' : '#374151',
+                      '&:hover': {
+                        backgroundColor: theme === 'light' ? '#e5e7eb' : '#4b5563',
+                      },
+                      '&.Mui-selected': {
+                        backgroundColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
+                        color: '#fff',
+                      },
+                    },
+                  }}
+                />
+              </Stack>
             </div>
-          ))}
-        </div>
-        <div className="mt-6">
-          <Stack spacing={2} alignItems="center">
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={handlePageChange}
-              variant="outlined"
-              shape="rounded"
-              sx={{
-                '& .MuiPaginationItem-root': {
-                  color: theme === 'light' ? '#000' : '#fff',
-                  backgroundColor: theme === 'light' ? '#fff' : '#374151',
-                  '&:hover': {
-                    backgroundColor: theme === 'light' ? '#e5e7eb' : '#4b5563',
-                  },
-                  '&.Mui-selected': {
-                    backgroundColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
-                    color: '#fff',
-                  },
-                },
-              }}
-            />
-          </Stack>
-        </div>
+          </div>
+        ) : (
+          <CancelRequests scrollRef={scrollRef} />
+        )}
       </div>
     </div>
   );

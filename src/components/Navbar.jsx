@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import Cookies from 'js-cookie';
 import { showToast } from './Toast';
+import OrdersModal from './OrdersModal';
 
 const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
@@ -13,10 +14,11 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
 
   const baseNavItems = ['Home', 'About', 'Contact', 'Services'];
   const authNavItems = user
-    ? ['Logout']
+    ? ['My Orders', 'Logout']
     : ['Register', 'Login'];
   const navItems = user?.isAdmin
     ? [...baseNavItems, 'Admin', ...authNavItems]
@@ -34,6 +36,14 @@ const Navbar = () => {
     if (isSidebarOpen) {
       toggleSidebar();
     }
+  };
+
+  const handleOpenOrdersModal = () => {
+    setIsOrdersModalOpen(true);
+  };
+
+  const handleCloseOrdersModal = () => {
+    setIsOrdersModalOpen(false);
   };
 
   return (
@@ -55,6 +65,30 @@ const Navbar = () => {
                       `}
                     >
                       Logout
+                      <span
+                        className={`
+                          absolute bottom-[-4px] left-0 w-full h-[2px] transform scale-x-0 
+                          group-hover:scale-x-100 transition-transform duration-300
+                        `}
+                        style={{
+                          backgroundColor: theme === 'dark' ? '#646cff' : '#535bf2',
+                        }}
+                      ></span>
+                    </button>
+                  </li>
+                );
+              }
+              if (item === 'My Orders' && user) {
+                return (
+                  <li key={item}>
+                    <button
+                      onClick={handleOpenOrdersModal}
+                      className={`
+                        relative group transition-colors duration-300
+                        ${theme === 'dark' ? 'text-[#646cff] hover:text-white' : 'text-[#646cff] hover:text-[#535bf2]'}
+                      `}
+                    >
+                      My Orders
                       <span
                         className={`
                           absolute bottom-[-4px] left-0 w-full h-[2px] transform scale-x-0 
@@ -156,6 +190,24 @@ const Navbar = () => {
                 </li>
               );
             }
+            if (item === 'My Orders' && user) {
+              return (
+                <li key={item}>
+                  <button
+                    onClick={() => {
+                      handleOpenOrdersModal();
+                      toggleSidebar();
+                    }}
+                    className={`
+                      relative transition-colors duration-300
+                      ${theme === 'dark' ? 'text-[#646cff] hover:text-white' : 'text-[#646cff] hover:text-[#535bf2]'}
+                    `}
+                  >
+                    My Orders
+                  </button>
+                </li>
+              );
+            }
             const path = item === 'Home' ? '/' : item === 'Admin' ? '/admin/dashboard' : `/${item.toLowerCase()}`;
             const isActive = location.pathname === path;
 
@@ -183,6 +235,13 @@ const Navbar = () => {
           })}
         </ul>
       </div>
+
+      <OrdersModal
+        theme={theme}
+        isOpen={isOrdersModalOpen}
+        onClose={handleCloseOrdersModal}
+        user={user}
+      />
     </header>
   );
 };
