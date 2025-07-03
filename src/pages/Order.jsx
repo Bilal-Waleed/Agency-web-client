@@ -18,7 +18,7 @@ const validationSchema = Yup.object({
     .email('Invalid email address')
     .required('Email is required'),
   phone: Yup.string()
-  .matches(/^\+?[1-9]\d{7,14}$/, 'Invalid international phone number')
+  .matches(/^(\+?\d{1,4})?[\s.-]?(\(?\d{2,4}\)?[\s.-]?)?[\d\s.-]{6,12}$/, 'Invalid phone number')
   .required('Phone number is required'),
   projectType: Yup.string().required('Project type is required'),
   projectBudget: Yup.string().required('Project budget is required'),
