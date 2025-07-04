@@ -47,6 +47,10 @@ const TopBar = () => {
     navigate('/'); 
   };
 
+  const getAvatarUrl = (user) => {
+    return user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Admin')}`;
+  };
+
   return (
     <div
       className={`fixed top-0 left-16 right-0 h-16 z-40 ${
@@ -89,7 +93,7 @@ const TopBar = () => {
           ></span>
         </div>
         <img
-          src={user?.avatar}
+          src={getAvatarUrl(user)}
           alt="Admin"
           className="w-8 h-8 rounded-full cursor-pointer"
           onClick={toggleDropdown}
@@ -101,7 +105,7 @@ const TopBar = () => {
             }`}
           >
             <p className={`font-semibold mb-2 ${theme === 'light' ? 'text-[#646cff]' : 'text-white'}`}>
-              Admin: {user?.name}
+              {user?.name} (Admin)
             </p>
             <button
               onClick={handleLogout}

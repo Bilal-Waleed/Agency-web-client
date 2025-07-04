@@ -235,6 +235,10 @@ const AdminUsers = ({ scrollRef }) => {
     handleCloseDialog();
   };
 
+  const getAvatarUrl = (u) => {
+    return u?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.name)}`;
+  };
+
   return (
     <div className={`min-h-screen ${theme === 'light' ? 'bg-gray-100' : 'bg-gray-900'}`}>
       {loading && <Loader />}
@@ -308,7 +312,7 @@ const AdminUsers = ({ scrollRef }) => {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
-                <img src={u.avatar} alt={u.name} className="w-10 h-10 rounded-full" />
+                <img src={getAvatarUrl(u)} alt={u.name} className="w-10 h-10 rounded-full" />
                 <div className="flex-1 min-w-0">
                   <p
                     className={`font-semibold break-words ${
