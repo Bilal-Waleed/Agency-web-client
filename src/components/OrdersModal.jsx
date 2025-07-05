@@ -196,7 +196,11 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
                         }
                         multiline
                         rows={3}
-                        sx={{ mb: 2 }}
+                        sx={{ mb: 2 ,
+                            '& .MuiInputBase-input': {
+                            color: 'white',
+                            },
+                        }}
                       />
                       <Button
                         variant="contained"

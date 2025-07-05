@@ -46,46 +46,48 @@ const CancelRequests = ({ scrollRef }) => {
     }
   };
 
- const handleAcceptCancelRequest = async (requestId) => {
-  try {
-    const token = Cookies.get('token');
-    await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/admin/cancel-requests/${requestId}/accept`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+const handleAcceptCancelRequest = async (requestId) => {
+    try {
+        const token = Cookies.get('token');
+        
+        const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin/cancel-requests/${requestId}/accept`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-    showToast('Cancel request accepted and order deleted', 'success');
+        showToast(res?.data?.message || 'Cancel request accepted and order deleted', 'success');
 
-    setTimeout(() => {
-      setCancelRequests((prev) => prev.filter((req) => req._id !== requestId));
-    }, 400); 
-  } catch (error) {
-    console.error('Error accepting cancel request:', error);
-    showToast('Failed to accept cancel request', 'error');
-  }
+        setCancelRequests((prev) => prev.filter((req) => req._id !== requestId));
+
+    } catch (error) {
+        console.error('Error accepting cancel request:', error);
+        showToast('Failed to accept cancel request', 'error');
+    }
 };
 
 
-  const handleDeclineCancelRequest = async (requestId) => {
+
+const handleDeclineCancelRequest = async (requestId) => {
   try {
     const token = Cookies.get('token');
-    await axios.post(
+
+    const res = await axios.post(
       `${import.meta.env.VITE_BACKEND_URL}/api/admin/cancel-requests/${requestId}/decline`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    showToast('Cancel request declined', 'success');
+    showToast(res?.data?.message || 'Cancel request declined', 'success');
 
-    setTimeout(() => {
-      setCancelRequests((prev) => prev.filter((req) => req._id !== requestId));
-    }, 400);
+    setCancelRequests((prev) => prev.filter((req) => req._id !== requestId));
+
   } catch (error) {
     console.error('Error declining cancel request:', error);
     showToast('Failed to decline cancel request', 'error');
   }
 };
+
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -217,13 +219,12 @@ const CancelRequests = ({ scrollRef }) => {
                 <div className="flex gap-2 mt-4">
                   <Button
                     onClick={() => handleAcceptCancelRequest(request._id)}
-                    variant="outlined"
+                    variant="contained"
                     size="medium"
                     sx={{
                       textTransform: 'none',
                       fontWeight: '500',
                       borderColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
-                      color: theme === 'light' ? '#3b82f6' : '#60a5fa',
                       '&:hover': {
                         borderColor: theme === 'light' ? '#2563eb' : '#3b82f6',
                         backgroundColor: theme === 'light' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(96, 165, 250, 0.1)',

@@ -37,8 +37,6 @@ const TopBar = () => {
     };
   }, []);
 
-  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
-
   const handleLogout = () => {
     setUser(null);
     Cookies.remove('token');
@@ -92,29 +90,36 @@ const TopBar = () => {
             }`}
           ></span>
         </div>
-        <img
-          src={getAvatarUrl(user)}
-          alt="Admin"
-          className="w-8 h-8 rounded-full cursor-pointer"
-          onClick={toggleDropdown}
-        />
-        {isDropdownOpen && (
-          <div
-            className={`absolute top-10 right-0 w-48 p-4 rounded-lg shadow-lg z-50 ${
-              theme === 'light' ? 'bg-white' : 'bg-gray-800'
-            }`}
-          >
-            <p className={`font-semibold mb-2 ${theme === 'light' ? 'text-[#646cff]' : 'text-white'}`}>
-              {user?.name} (Admin)
-            </p>
-            <button
-              onClick={handleLogout}
-              className="w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-left"
+        <div 
+          className="relative"
+          onMouseEnter={() => setIsDropdownOpen(true)}
+          onMouseLeave={() => setIsDropdownOpen(false)}
+        >
+          <img
+            src={getAvatarUrl(user)}
+            alt="Admin"
+            className="w-8 h-8 rounded-full cursor-pointer"
+          />
+          {isDropdownOpen && (
+            <div
+              className={`absolute top-8 right-0 w-48 p-4 rounded-lg shadow-lg z-50 ${
+                theme === 'light' ? 'bg-white' : 'bg-gray-800'
+              }`}
+              onMouseEnter={() => setIsDropdownOpen(true)}
+              onMouseLeave={() => setIsDropdownOpen(false)}
             >
-              Logout
-            </button>
-          </div>
-        )}
+              <p className={`font-semibold mb-2 ${theme === 'light' ? 'text-[#646cff]' : 'text-white'}`}>
+                {user?.name} (Admin)
+              </p>
+              <button
+                onClick={handleLogout}
+                className="w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-left"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
