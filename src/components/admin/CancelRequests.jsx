@@ -182,38 +182,38 @@ const handleDeclineCancelRequest = async (requestId) => {
                 className="w-10 h-10 rounded-full"
               />
               <div className="flex flex-col min-w-0 w-full">
-                <p className={`font-semibold break-words ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>
+                <p className={`font-semibold text-lg break-words ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>
                   {request.order.name} ({request.order.email})
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Phone: {request.order.phone}
+                 <strong> Phone:</strong> {request.order.phone}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Project Type: {request.order.projectType}
+                 <strong> Project Type:</strong> {request.order.projectType}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Budget: {request.order.projectBudget}
+                 <strong> Budget:</strong> {request.order.projectBudget}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Timeline: {new Date(request.order.timeline).toLocaleDateString()}
+                 <strong> Timeline:</strong> {new Date(request.order.timeline).toLocaleDateString()}
                 </p>
                 <p className={`text-sm break-words ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Description: {request.order.projectDescription}
+                 <strong> Description: </strong>{request.order.projectDescription}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Payment Reference: {request.order.paymentReference}
+                 <storng> Payment Reference: </storng>  {request.order.paymentReference}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Payment Method: {request.order.paymentMethod}
+                 <strong> Payment Method: </strong>{request.order.paymentMethod}
                 </p>
                 <p className={`text-sm break-words whitespace-normal ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Files: {request.order.filesList}
+                 <strong> Files:</strong> {request.order.filesList}
                 </p>
                 <p className={`text-sm break-words ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  Cancellation Reason: {request.reason}
+                 <storng> Cancellation Reason:</storng> {request.reason}
                 </p>
                 <p className={`text-xs pt-1 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
-                  Order Created: {new Date(request.order.createdAt).toLocaleDateString()}
+                 <strong> Order Created:</strong> {new Date(request.order.createdAt).toLocaleDateString()}
                 </p>
 
                 <div className="flex gap-2 mt-4">
@@ -223,11 +223,9 @@ const handleDeclineCancelRequest = async (requestId) => {
                     size="medium"
                     sx={{
                       textTransform: 'none',
-                      fontWeight: '500',
+                      fontWeight: '700',
                       borderColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
                       '&:hover': {
-                        borderColor: theme === 'light' ? '#2563eb' : '#3b82f6',
-                        backgroundColor: theme === 'light' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(96, 165, 250, 0.1)',
                         transform: 'scale(1.03)',
                         transition: 'all 0.2s ease-in-out',
                       },
@@ -246,8 +244,6 @@ const handleDeclineCancelRequest = async (requestId) => {
                       borderColor: theme === 'light' ? '#ef4444' : '#f87171',
                       color: theme === 'light' ? '#ef4444' : '#f87171',
                       '&:hover': {
-                        borderColor: theme === 'light' ? '#b91c1c' : '#dc2626',
-                        backgroundColor: theme === 'light' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(248, 113, 113, 0.1)',
                         transform: 'scale(1.03)',
                         transition: 'all 0.2s ease-in-out',
                       },

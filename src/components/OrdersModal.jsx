@@ -56,7 +56,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
     setSubmittingOrderId(orderId);
     try {
       const token = Cookies.get('token');
-      await axios.post(
+      const res =  await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/admin/cancel-requests`,
         { orderId, reason },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -66,7 +66,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
       onClose();
     } catch (error) {
       console.error('Error submitting cancel request:', error);
-      showToast('Failed to submit cancel request', 'error');
+      showToast(error?.response?.data?.message || 'Failed to submit cancel request', 'error');
     } finally {
       setSubmittingOrderId(null);
     }
@@ -127,6 +127,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
             id="orders-modal-title"
             variant="h6"
             component="h2"
+            fontWeight={800}
             sx={{ mb: 2, color: theme === 'light' ? 'black' : 'white', pr: 8 }}
           >
             My Orders
@@ -140,37 +141,37 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
               {orders.map((order) => (
                 <div
                   key={order._id}
-                  className={`p-4 rounded-lg ${theme === 'light' ? 'bg-gray-100' : 'bg-gray-700'}`}
+                  className={`p-4 rounded-lg ${theme === 'light' ? 'bg-gray-200 text-gray-900' : 'bg-gray-700 text-gray-200'}`}
                 >
-                  <Typography sx={{ color: theme === 'light' ? 'gray.900' : 'gray.100', fontWeight: 'bold' }}>
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-900' : 'text-gray-100', fontWeight: 'bold' }}>
                     {order.name} ({order.email})
                   </Typography>
-                  <Typography sx={{ color: theme === 'light' ? 'gray.600' : 'gray.400', fontSize: '0.875rem' }}>
-                    Phone: {order.phone}
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
+                   <strong> Phone: </strong> {order.phone}
                   </Typography>
-                  <Typography sx={{ color: theme === 'light' ? 'gray.600' : 'gray.400', fontSize: '0.875rem' }}>
-                    Project Type: {order.projectType}
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
+                   <strong> Project Type: </strong> {order.projectType}
                   </Typography>
-                  <Typography sx={{ color: theme === 'light' ? 'gray.600' : 'gray.400', fontSize: '0.875rem' }}>
-                    Budget: {order.projectBudget}
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
+                   <strong> Budget:  </strong> {order.projectBudget}
                   </Typography>
-                  <Typography sx={{ color: theme === 'light' ? 'gray.600' : 'gray.400', fontSize: '0.875rem' }}>
-                    Timeline: {new Date(order.timeline).toLocaleDateString()}
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
+                   <strong> Timeline: </strong> {new Date(order.timeline).toLocaleDateString()}
                   </Typography>
-                  <Typography sx={{ color: theme === 'light' ? 'gray.600' : 'gray.400', fontSize: '0.875rem', wordBreak: 'break-word' }}>
-                    Description: {order.projectDescription}
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem', wordBreak: 'break-word' }}>
+                   <strong> Description: </strong> {order.projectDescription}
                   </Typography>
-                  <Typography sx={{ color: theme === 'light' ? 'gray.600' : 'gray.400', fontSize: '0.875rem' }}>
-                    Payment Reference: {order.paymentReference}
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
+                   <strong> Payment Reference: </strong> {order.paymentReference}
                   </Typography>
-                  <Typography sx={{ color: theme === 'light' ? 'gray.600' : 'gray.400', fontSize: '0.875rem' }}>
-                    Payment Method: {order.paymentMethod}
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
+                   <strong> Payment Method: </strong> {order.paymentMethod}
                   </Typography>
-                  <Typography sx={{ color: theme === 'light' ? 'gray.600' : 'gray.400', fontSize: '0.875rem', wordBreak: 'break-word' }}>
-                    Files: {order.filesList}
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem', wordBreak: 'break-word' }}>
+                   <strong> Files: </strong> {order.filesList}
                   </Typography>
-                  <Typography sx={{ color: theme === 'light' ? 'gray.500' : 'gray.500', fontSize: '0.75rem', pt: 1 }}>
-                    Created: {new Date(order.createdAt).toLocaleDateString()}
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-500' : 'text-gray-500', fontSize: '0.75rem', pt: 1 }}>
+                   <strong> Created:  </strong> {new Date(order.createdAt).toLocaleDateString()}
                   </Typography>
                   <Button
                     variant="contained"
@@ -186,7 +187,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
                     <div className="mt-2">
                       <TextField
                         fullWidth
-                        label="Reason for Cancellation"
+                        label="Reason for Cancellation (minimum 10 words)"
                         value={cancelReason[order._id] || ''}
                         onChange={(e) =>
                           setCancelReason((prev) => ({

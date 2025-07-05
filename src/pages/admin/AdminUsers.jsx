@@ -337,30 +337,28 @@ const AdminUsers = ({ scrollRef }) => {
                   {user._id !== u._id && (
                     <Button
                       onClick={() => handleOpenDialog(u._id, u.isAdmin ? 'remove' : 'make')}
-                      variant="outlined"
+                      variant="contained"
                       size="small"
                       sx={{
                         marginTop: '4px',
                         textTransform: 'none',
                         fontWeight: 'medium',
-                        borderColor: u.isAdmin
-                          ? theme === 'light' ? '#f59e0b' : '#d97706'
-                          : theme === 'light' ? '#3b82f6' : '#60a5fa',
-                        color: u.isAdmin
-                          ? theme === 'light' ? '#f59e0b' : '#d97706'
-                          : theme === 'light' ? '#3b82f6' : '#60a5fa',
+                        backgroundColor: u.isAdmin
+                          ? theme === 'light' ? '#ef4444' : '#dc2626'
+                          : theme === 'light' ? '#3b82f6' : '#2563eb', 
+                        color: '#ffffff',
                         '&:hover': {
-                          borderColor: u.isAdmin
-                            ? theme === 'light' ? '#d97706' : '#b45309'
-                            : theme === 'light' ? '#2563eb' : '#3b82f6',
-                          backgroundColor: theme === 'light' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(96, 165, 250, 0.1)',
                           transform: 'scale(1.02)',
                           transition: 'all 0.2s ease-in-out',
+                          backgroundColor: u.isAdmin
+                            ? theme === 'light' ? '#dc2626' : '#b91c1c'
+                            : theme === 'light' ? '#2563eb' : '#1d4ed8',
                         },
                       }}
                     >
                       {u.isAdmin ? 'Remove Admin' : 'Make Admin'}
-                    </Button>
+                  </Button>
+
                   )}
                 </div>
               </div>
