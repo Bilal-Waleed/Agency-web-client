@@ -22,7 +22,27 @@ const AdminDashboard = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [daysFilter, setDaysFilter] = useState(15);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const chartTextColor = theme === 'light' ? '#1f2937' : '#ffffff'; 
+
+  const fetchData = async (selectedDays = daysFilter, showLoader = true) => {
+    if (showLoader) setLoading(true);
+    try {
+      const token = Cookies.get('token');
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/dashboard?days=${selectedDays}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setDashboardData(response.data.data);
+      setLastUpdated(new Date());
+    } catch (error) {
+      const message = error.response?.data?.message || 'Error loading Dashboard data.';
+      showToast(message, 'error');
+    } finally {
+      if (showLoader) setLoading(false);
+    }
+  };
+
 
 
   const [dashboardData, setDashboardData] = useState({
@@ -40,24 +60,7 @@ const AdminDashboard = () => {
 
     socket.emit('joinAdmin');
 
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const token = Cookies.get('token');
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/dashboard`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setDashboardData(response.data.data);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        const message = error.response?.data?.message || 'Error loading Dashboard data.';
-        showToast(message, 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchData(daysFilter, true);
 
     socket.on('orderChange', fetchData);
     socket.on('userChange', fetchData);
@@ -109,9 +112,27 @@ const AdminDashboard = () => {
       <Sidebar />
       <div className="ml-16 mt-2 p-4 sm:p-6 flex flex-col flex-grow min-h-screen">
         <TopBar />
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6">Admin Dashboard
-          <div className="w-30 h-1 bg-[#646cff] mt-2"></div>
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+            Admin Dashboard
+            <div className="w-30 h-1 bg-[#646cff] mt-2"></div>
+          </h1>
+
+          <select
+            value={daysFilter}
+            onChange={(e) => {
+              const value = parseInt(e.target.value);
+              setDaysFilter(value);
+              fetchData(value, false);
+            }}
+            className="ml-auto p-2 border rounded text-[8px] sm:text-xs text-black dark:text-white dark:bg-gray-800"
+          >
+            <option value={15}>Last 15 Days</option>
+            <option value={30}>Last 30 Days</option>
+            <option value={90}>Last 90 Days</option>
+            <option value={180}>Last 180 Days</option>
+          </select>
+        </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
           {safeData.monthlyOrders.length > 0 && (
@@ -144,6 +165,11 @@ const AdminDashboard = () => {
                   slotProps={{ container: { className: 'w-full h-full' } }}
                 />
               </div>
+              {lastUpdated && (
+                <p className="text-sm text-gray-400 mt-4 text-right">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </p>
+              )}
             </div>
           )}
 
@@ -179,6 +205,11 @@ const AdminDashboard = () => {
                   slotProps={{ container: { className: 'w-full h-full' } }}
                 />
               </div>
+              {lastUpdated && (
+                <p className="text-sm text-gray-400 mt-4 text-right">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </p>
+              )}
             </div>
           )}
 
@@ -208,13 +239,18 @@ const AdminDashboard = () => {
                   slotProps={{ container: { className: 'w-full h-full' } }}
                 />
               </div>
+              {lastUpdated && (
+                <p className="text-sm text-gray-400 mt-4 text-right">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </p>
+              )}
             </div>
           )}
 
           {safeData.serviceOrders.length > 0 && (
             <div className={`p-4 rounded-lg ${theme === 'light' ? 'bg-white' : 'bg-gray-800'}`}>
               <h2 className="text-base sm:text-lg font-semibold mb-4">Service-wise Order Distribution</h2>
-              <div className="w-full h-[250px] sm:h-[350px] md:h-[400px] lg:h-[450px]">
+              <div className="w-full h-[250px] sm:h-[350px] md:h-[400px] lg:h-[400px]">
                 <PieChart
                   series={[{
                     data: safeData.serviceOrders.map((item, idx) => ({
@@ -239,6 +275,11 @@ const AdminDashboard = () => {
                   slotProps={{ container: { className: 'w-full h-full' } }}
                 />
               </div>
+                {lastUpdated && (
+                  <p className="text-sm text-gray-400 mt-4 text-right">
+                    Last updated: {lastUpdated.toLocaleTimeString()}
+                  </p>
+                )}
             </div>
           )}
         </div>
