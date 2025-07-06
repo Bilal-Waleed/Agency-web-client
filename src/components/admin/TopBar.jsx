@@ -99,7 +99,12 @@ const TopBar = () => {
             src={getAvatarUrl(user)}
             alt="Admin"
             className="w-8 h-8 rounded-full cursor-pointer"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Admin')}`;
+            }}
           />
+
           {isDropdownOpen && (
             <div
               className={`absolute top-8 right-0 w-48 p-4 rounded-lg shadow-lg z-50 ${

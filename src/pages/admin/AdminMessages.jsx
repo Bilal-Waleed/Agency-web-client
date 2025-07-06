@@ -116,7 +116,7 @@ const AdminMessages = ({ scrollRef }) => {
                 src={getAvatarUrl(contact)}
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(contact.name)}`;
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(contact.name)}`;
                 }}
                 alt={contact.name}
                 className="w-10 h-10 rounded-full"

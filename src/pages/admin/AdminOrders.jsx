@@ -237,7 +237,7 @@ const AdminOrders = ({ scrollRef }) => {
                       src={getAvatarUrl(order)}
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
                           order.name
                         )}`;
                       }}

@@ -312,7 +312,16 @@ const AdminUsers = ({ scrollRef }) => {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
-                <img src={getAvatarUrl(u)} alt={u.name} className="w-10 h-10 rounded-full" />
+                <img
+                  src={getAvatarUrl(u)}
+                  alt={u?.name}
+                  className="w-10 h-10 rounded-full"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.name || 'User')}`;
+                  }}
+                />
+
                 <div className="flex-1 min-w-0">
                   <p
                     className={`font-semibold break-words ${

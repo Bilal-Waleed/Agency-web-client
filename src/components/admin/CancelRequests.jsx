@@ -176,7 +176,7 @@ const handleDeclineCancelRequest = async (requestId) => {
                 src={getAvatarUrl(request.order)}
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(request.order.name)}`;
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(request.order.name)}`;
                 }}
                 alt={request.order.name}
                 className="w-10 h-10 rounded-full"
