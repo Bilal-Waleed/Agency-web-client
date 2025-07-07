@@ -1,0 +1,320 @@
+import React, { useState, useEffect } from 'react';
+import { useTheme } from '../../context/ThemeContext';
+import { useNavigate } from 'react-router-dom';
+import { FaBell, FaCog } from 'react-icons/fa';
+import { io } from 'socket.io-client';
+import axios from 'axios';
+import Cookies from 'js-cookie';
+
+const socket = io(import.meta.env.VITE_BACKEND_URL, {
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  transports: ['websocket', 'polling'],
+});
+
+const Notification = () => {
+  const { theme } = useTheme() || { theme: 'light' };
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [filterDays, setFilterDays] = useState(30);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const addNotification = (incoming, type) => {
+  setNotifications((prev) => {
+    const exists = prev.some(
+      (notif) =>
+        notif._id === incoming._id ||
+        notif._id === incoming.fullDocument?._id
+    );
+    if (exists) return prev;
+
+    const doc = incoming.fullDocument || incoming;
+
+    const newNotification = {
+      _id: doc._id,
+      type,
+      data: doc,
+      createdAt: new Date(doc.createdAt || Date.now()),
+      viewed: false,
+    };
+
+    return [newNotification, ...prev];
+  });
+};
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = Cookies.get('token');
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/notifications`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('Raw API response:', response.data);
+        const mappedNotifications = response.data.data.map((notif) => {
+          console.log('Processing notification:', notif); 
+          return {
+            _id: notif._id,
+            type: notif.type,
+            data: notif.data,
+            createdAt: new Date(notif.createdAt),
+            viewed: notif.viewed,
+          }
+        });
+        setNotifications(mappedNotifications);
+        console.log('Fetched notifications:', mappedNotifications);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+  useEffect(() => {
+    const handleConnect = () => {
+      console.log('Socket.IO connected:', socket.id);
+      socket.emit('joinAdmin');
+      console.log('Joined adminRoom');
+    };
+
+    const handleConnectError = (error) => {
+      console.error('Socket.IO connection error:', error.message);
+    };
+
+    const handleDisconnect = () => {
+      console.log('Socket.IO disconnected');
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('connect_error', handleConnectError);
+    socket.on('disconnect', handleDisconnect);
+
+    socket.on('contactChange', (contact) => addNotification(contact, 'contact'));
+    socket.on('orderChange', (change) => addNotification(change, 'order'));
+    socket.on('cancelRequestChange', (change) => addNotification(change, 'cancelRequest'));
+    socket.on('meetingChange', (meeting) => addNotification(meeting, 'meeting'));
+
+
+    if (socket.connected) {
+      socket.emit('joinAdmin');
+      console.log('Joined adminRoom (initial check)');
+    }
+
+    return () => {
+      socket.emit('leaveAdmin');
+      console.log('Left adminRoom');
+      socket.off('connect', handleConnect);
+      socket.off('connect_error', handleConnectError);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('contactChange');
+      socket.off('orderChange');
+      socket.off('cancelRequestChange');
+      socket.off('meetingChange');
+    };
+  }, []);
+
+  const handleDropdownOpen = async () => {
+    setIsDropdownOpen(true);
+    console.log('Dropdown opened, notifications:', filteredNotifications);
+    try {
+      const token = Cookies.get('token');
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/notifications/mark-viewed`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, viewed: true }))
+      );
+      console.log('Notifications marked as viewed');
+    } catch (error) {
+      console.error('Error marking notifications viewed:', error);
+    }
+  };
+
+  const filteredNotifications = notifications.filter((notification) => {
+    const now = new Date();
+    const notificationDate = new Date(notification.createdAt);
+    if (isNaN(notificationDate.getTime())) {
+      console.warn('Invalid createdAt for notification:', notification);
+      return true;
+    }
+    const diffTime = Math.abs(now - notificationDate);
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    console.log(`Notification ${notification.type} diffDays:`, diffDays);
+    return diffDays <= filterDays;
+  });
+
+  const unviewedCount = notifications.filter((notif) => !notif.viewed).length;
+
+  const handleNotificationClick = (notification) => {
+    switch (notification.type) {
+      case 'contact':
+        navigate('/admin/messages');
+        break;
+      case 'order':
+        navigate('/admin/orders');
+        break;
+      case 'cancelRequest':
+        navigate('/admin/orders', { state: { activeTab: 'cancel-requests' } });
+        break;
+      case 'meeting':
+        navigate('/admin/scheduled-meetings');
+        break;
+      default:
+        break;
+    }
+    setIsDropdownOpen(false);
+  };
+
+  const renderNotificationMessage = (notification) => {
+  const { type, data } = notification;
+  const doc = data.fullDocument || data;
+
+  let name = 'User';
+  let email = 'No email';
+  let avatar = `https://ui-avatars.com/api/?name=User`;
+
+  if (type === 'contact') {
+    name = doc.name || name;
+    email = doc.email || email;
+    avatar = doc.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+  } 
+  else if (type === 'order') {
+    name = doc.user?.name || name;
+    email = doc.user?.email || email;
+    avatar = doc.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+  } 
+  else if (type === 'cancelRequest') {
+    name = doc.order?.user?.name || name;
+    email = doc.order?.user?.email || email;
+    avatar = doc.order?.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+  } 
+  else if (type === 'meeting') {
+    name = doc.user?.name || name;
+    email = doc.user?.email || email;
+    avatar = doc.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+  }
+
+  console.log(`Rendering ${type} notification:`, { name, email, avatar, doc });
+
+  return (
+    <div
+      className={`flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700`}
+      onClick={() => handleNotificationClick(notification)}
+    >
+      <img
+        src={avatar}
+        alt={name}
+        className="w-10 h-10 rounded-full"
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+        }}
+      />
+      <div className="flex flex-col">
+        <p className="font-medium text-gray-900 dark:text-white">{name}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{email}</p>
+        <p className="text-sm text-blue-500 dark:text-blue-300">
+          {type === 'contact' && 'Submitted a contact form'}
+          {type === 'order' && 'Placed an order'}
+          {type === 'cancelRequest' && 'Requested order cancellation'}
+          {type === 'meeting' && 'Scheduled a meeting'}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+  return (
+    <div className="relative">
+      <div
+        className="relative group cursor-pointer"
+        onClick={() => {
+        if (!isDropdownOpen) {
+            handleDropdownOpen(); 
+        } else {
+            setIsDropdownOpen(false);
+        }
+        }}
+       onMouseEnter={() => {
+        if (!isDropdownOpen) handleDropdownOpen();
+        }}
+        onMouseLeave={() => {
+            setIsDropdownOpen(false);
+            setShowSettings(false);
+        }}
+        >
+
+        <FaBell
+          className={`text-2xl ${theme === 'light' ? 'text-[#646cff]' : 'text-[#646cff]'}`}
+        />
+        {unviewedCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+            {unviewedCount}
+          </span>
+        )}
+      </div>
+
+      {isDropdownOpen && (
+        <div
+        className={`fixed top-12 right-4 lg:right-16 w-80 min-h-[200px] max-h-[400px] overflow-y-auto rounded-xl shadow-2xl z-[9999] transition-all ${
+        theme === 'light' ? 'bg-white border border-gray-200' : 'bg-gray-900 border border-gray-700'
+        }`}
+
+          onMouseEnter={() => setIsDropdownOpen(true)}
+          onMouseLeave={() => {
+            setIsDropdownOpen(false);
+            setShowSettings(false);
+          }}
+        >
+          <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+            <h5 className={`font-semibold ${theme === 'light' ? 'text-[#646cff]' : 'text-white'}`}>
+              Notifications
+            </h5>
+            <div className="relative">
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className={`p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                  theme === 'light' ? 'text-[#646cff]' : 'text-white'
+                }`}
+              >
+                <FaCog className="text-lg" />
+              </button>
+              {showSettings && (
+                <div className="absolute right-0 top-7 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-md z-50 w-36 text-sm">
+                  {[15, 30, 90].map((days) => (
+                    <button
+                      key={days}
+                      onClick={() => {
+                        setFilterDays(days);
+                        setShowSettings(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                        filterDays === days ? 'bg-[#646cff] text-white' : ''
+                      }`}
+                    >
+                      Last {days} Days
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {filteredNotifications.length > 0 ? (
+            filteredNotifications.map((notification, index) => (
+              <div key={notification._id || index}>{renderNotificationMessage(notification)}</div>
+            ))
+          ) : (
+            <p className="p-3 text-sm text-gray-600 dark:text-gray-400">No notifications</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Notification;

@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { io } from 'socket.io-client';
 import Sidebar from '../../components/admin/Sidebar';
 import TopBar from '../../components/admin/TopBar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
@@ -18,43 +18,43 @@ const AdminOrders = ({ scrollRef }) => {
   const { theme } = useTheme();
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'orders');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const ordersPerPage = 10;
   const socketRef = useRef(null);
 
   const fetchOrders = async (showLoader = true) => {
-  if (showLoader) setLoading(true);
-  try {
-    const token = Cookies.get('token');
-    const response = await axios.get(
-      `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders?page=${page}&limit=${ordersPerPage}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
+    if (showLoader) setLoading(true);
+    try {
+      const token = Cookies.get('token');
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders?page=${page}&limit=${ordersPerPage}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setOrders(response.data.data);
+      setTotalPages(response.data.totalPages);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      let message = 'Error loading Orders. Please try again.';
+      if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+        message = 'No internet connection. Please check your network.';
+      } else if (error.response?.data?.message) {
+        message = error.response.data.message;
       }
-    );
-    setOrders(response.data.data);
-    setTotalPages(response.data.totalPages);
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    let message = 'Error loading Orders. Please try again.';
-    if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
-      message = 'No internet connection. Please check your network.';
-    } else if (error.response?.data?.message) {
-      message = error.response.data.message;
+      showToast(message, 'error');
+    } finally {
+      if (showLoader) setLoading(false);
     }
-    showToast(message, 'error');
-  } finally {
-    if (showLoader) setLoading(false);
-  }
-};
-
+  };
 
   const handleDownload = async (orderId) => {
     setDownloadingId(orderId);
@@ -119,10 +119,10 @@ const AdminOrders = ({ scrollRef }) => {
 
       socketRef.current.on('orderChange', (change) => {
         if (['insert', 'delete'].includes(change.operationType)) {
-        fetchOrders(false);
+          fetchOrders(false);
         }
-    });
-  }
+      });
+    }
 
     if (activeTab === 'orders') {
       fetchOrders();
@@ -139,8 +139,12 @@ const AdminOrders = ({ scrollRef }) => {
   }, [user, navigate, page, activeTab]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page]);
+    if (scrollRef?.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [page, activeTab]);
 
   const handlePageChange = (event, value) => {
     setPage(value);

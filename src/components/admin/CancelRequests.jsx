@@ -20,8 +20,8 @@ const CancelRequests = ({ scrollRef }) => {
   const requestsPerPage = 10;
   const socketRef = useRef(null);
 
-  const fetchCancelRequests = async () => {
-    setLoading(true);
+  const fetchCancelRequests = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const token = Cookies.get('token');
       const response = await axios.get(
@@ -30,6 +30,7 @@ const CancelRequests = ({ scrollRef }) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      console.log('Fetched cancel requests:', response.data.data);
       setCancelRequests(response.data.data);
       setTotalPages(response.data.totalPages);
     } catch (error) {
@@ -42,52 +43,41 @@ const CancelRequests = ({ scrollRef }) => {
       }
       showToast(message, 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-const handleAcceptCancelRequest = async (requestId) => {
+  const handleAcceptCancelRequest = async (requestId) => {
     try {
-        const token = Cookies.get('token');
-        
-        const res = await axios.post(
+      const token = Cookies.get('token');
+      const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/admin/cancel-requests/${requestId}/accept`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        showToast(res?.data?.message || 'Cancel request accepted and order deleted', 'success');
-
-        setCancelRequests((prev) => prev.filter((req) => req._id !== requestId));
-
+      );
+      showToast(res?.data?.message || 'Cancel request accepted and order deleted', 'success');
+      setCancelRequests((prev) => prev.filter((req) => req._id !== requestId));
     } catch (error) {
-        console.error('Error accepting cancel request:', error);
-        showToast('Failed to accept cancel request', 'error');
+      console.error('Error accepting cancel request:', error);
+      showToast('Failed to accept cancel request', 'error');
     }
-};
+  };
 
-
-
-const handleDeclineCancelRequest = async (requestId) => {
-  try {
-    const token = Cookies.get('token');
-
-    const res = await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/admin/cancel-requests/${requestId}/decline`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    showToast(res?.data?.message || 'Cancel request declined', 'success');
-
-    setCancelRequests((prev) => prev.filter((req) => req._id !== requestId));
-
-  } catch (error) {
-    console.error('Error declining cancel request:', error);
-    showToast('Failed to decline cancel request', 'error');
-  }
-};
-
+  const handleDeclineCancelRequest = async (requestId) => {
+    try {
+      const token = Cookies.get('token');
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin/cancel-requests/${requestId}/decline`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      showToast(res?.data?.message || 'Cancel request declined', 'success');
+      setCancelRequests((prev) => prev.filter((req) => req._id !== requestId));
+    } catch (error) {
+      console.error('Error declining cancel request:', error);
+      showToast('Failed to decline cancel request', 'error');
+    }
+  };
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -103,32 +93,11 @@ const handleDeclineCancelRequest = async (requestId) => {
       socketRef.current.emit('joinAdmin');
 
       socketRef.current.on('cancelRequestChange', (change) => {
-        if (change.operationType === 'insert') {
-          setCancelRequests((prevRequests) => {
-            if (prevRequests.some((req) => req._id === change.fullDocument._id)) {
-              return prevRequests;
-            }
-            const updatedRequests = [change.fullDocument, ...prevRequests];
-            if (updatedRequests.length > requestsPerPage) {
-              updatedRequests.pop();
-            }
-            setTotalPages((prevTotal) => {
-              const totalRequests = prevTotal * requestsPerPage + 1;
-              return Math.ceil(totalRequests / requestsPerPage);
-            });
-            return updatedRequests;
-          });
-        } else if (change.operationType === 'delete') {
-          setCancelRequests((prevRequests) =>
-            prevRequests.filter((req) => req._id !== change.documentKey._id)
-          );
-          if (cancelRequests.length === 1 && page === totalPages && page > 1) {
-            setPage((prevPage) => prevPage - 1);
-          } else if (cancelRequests.length <= requestsPerPage) {
-            fetchCancelRequests();
-          }
-        }
-      });
+        console.log('Received cancelRequestChange:', change);
+       if (change.operationType === 'insert') {
+            fetchCancelRequests(true); 
+       }
+        });
     }
 
     fetchCancelRequests();
@@ -157,7 +126,8 @@ const handleDeclineCancelRequest = async (requestId) => {
   };
 
   const getAvatarUrl = (item) => {
-    return item?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}`;
+    const name = item.user?.name || item.name || 'User';
+    return item.user?.avatar || item.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
   };
 
   return (
@@ -176,44 +146,47 @@ const handleDeclineCancelRequest = async (requestId) => {
                 src={getAvatarUrl(request.order)}
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(request.order.name)}`;
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    request.order.user?.name || request.order.name || 'User'
+                  )}`;
                 }}
-                alt={request.order.name}
+                alt={request.order.user?.name || request.order.name || 'User'}
                 className="w-10 h-10 rounded-full"
               />
               <div className="flex flex-col min-w-0 w-full">
                 <p className={`font-semibold text-lg break-words ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>
-                  {request.order.name} ({request.order.email})
+                  {request.order.user?.name || request.order.name || 'User'} (
+                  {request.order.user?.email || request.order.email || 'No email'})
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                 <strong> Phone:</strong> {request.order.phone}
+                  <strong>Phone:</strong> {request.order.phone}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                 <strong> Project Type:</strong> {request.order.projectType}
+                  <strong>Project Type:</strong> {request.order.projectType}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                 <strong> Budget:</strong> {request.order.projectBudget}
+                  <strong>Budget:</strong> {request.order.projectBudget}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                 <strong> Timeline:</strong> {new Date(request.order.timeline).toLocaleDateString()}
+                  <strong>Timeline:</strong> {new Date(request.order.timeline).toLocaleDateString()}
                 </p>
                 <p className={`text-sm break-words ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                 <strong> Description: </strong>{request.order.projectDescription}
+                  <strong>Description:</strong> {request.order.projectDescription}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                 <storng> Payment Reference: </storng>  {request.order.paymentReference}
+                  <strong>Payment Reference:</strong> {request.order.paymentReference}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                 <strong> Payment Method: </strong>{request.order.paymentMethod}
+                  <strong>Payment Method:</strong> {request.order.paymentMethod}
                 </p>
                 <p className={`text-sm break-words whitespace-normal ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                 <strong> Files:</strong> {request.order.filesList}
+                  <strong>Files:</strong> {request.order.filesList}
                 </p>
                 <p className={`text-sm break-words ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                 <storng> Cancellation Reason:</storng> {request.reason}
+                  <strong>Cancellation Reason:</strong> {request.reason}
                 </p>
                 <p className={`text-xs pt-1 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
-                 <strong> Order Created:</strong> {new Date(request.order.createdAt).toLocaleDateString()}
+                  <strong>Order Created:</strong> {new Date(request.order.createdAt).toLocaleDateString()}
                 </p>
 
                 <div className="flex gap-2 mt-4">

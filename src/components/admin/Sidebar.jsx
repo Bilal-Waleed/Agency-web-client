@@ -11,7 +11,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`fixed top-0 left-0 h-screen z-50 ${
+      className={`fixed top-0 left-0 h-screen z-10 ${
         isOpen ? 'w-64' : 'w-16'
       } ${theme === 'light' ? 'bg-white' : 'bg-gray-900'} transition-all duration-300 flex flex-col `}
     >
