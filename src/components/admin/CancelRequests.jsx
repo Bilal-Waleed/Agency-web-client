@@ -17,6 +17,7 @@ const CancelRequests = ({ scrollRef }) => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [disabledRequests, setDisabledRequests] = useState({});
   const requestsPerPage = 10;
   const socketRef = useRef(null);
 
@@ -48,6 +49,7 @@ const CancelRequests = ({ scrollRef }) => {
   };
 
   const handleAcceptCancelRequest = async (requestId) => {
+    setDisabledRequests(prev => ({ ...prev, [requestId]: true }));
     try {
       const token = Cookies.get('token');
       const res = await axios.post(
@@ -64,6 +66,7 @@ const CancelRequests = ({ scrollRef }) => {
   };
 
   const handleDeclineCancelRequest = async (requestId) => {
+    setDisabledRequests(prev => ({ ...prev, [requestId]: true }));
     try {
       const token = Cookies.get('token');
       const res = await axios.post(
@@ -194,6 +197,7 @@ const CancelRequests = ({ scrollRef }) => {
                     onClick={() => handleAcceptCancelRequest(request._id)}
                     variant="contained"
                     size="medium"
+                    disabled={disabledRequests[request._id]}
                     sx={{
                       textTransform: 'none',
                       fontWeight: '700',
@@ -201,6 +205,10 @@ const CancelRequests = ({ scrollRef }) => {
                       '&:hover': {
                         transform: 'scale(1.03)',
                         transition: 'all 0.2s ease-in-out',
+                      },
+                      ...disabledRequests[request._id] && {
+                        backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
+                        color: theme === 'light' ? '#9ca3af' : '#9ca3af',
                       },
                     }}
                   >
@@ -211,6 +219,7 @@ const CancelRequests = ({ scrollRef }) => {
                     onClick={() => handleDeclineCancelRequest(request._id)}
                     variant="outlined"
                     size="medium"
+                    disabled={disabledRequests[request._id]}
                     sx={{
                       textTransform: 'none',
                       fontWeight: '500',
@@ -219,6 +228,10 @@ const CancelRequests = ({ scrollRef }) => {
                       '&:hover': {
                         transform: 'scale(1.03)',
                         transition: 'all 0.2s ease-in-out',
+                      },
+                      ...disabledRequests[request._id] && {
+                        backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
+                        color: theme === 'light' ? '#9ca3af' : '#9ca3af',
                       },
                     }}
                   >

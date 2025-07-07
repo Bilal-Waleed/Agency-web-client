@@ -6,15 +6,10 @@ import { io } from 'socket.io-client';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const socket = io(import.meta.env.VITE_BACKEND_URL, {
-  reconnection: true,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
-  transports: ['websocket', 'polling'],
-});
+const socket = io(import.meta.env.VITE_BACKEND_URL)
 
 const Notification = () => {
-  const { theme } = useTheme() || { theme: 'light' };
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -202,7 +197,7 @@ const Notification = () => {
 
   return (
     <div
-      className={`flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700`}
+      className={`flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer ${theme === 'light' ? 'hover:bg-gray-200' : 'hover:bg-gray-800'}`}
       onClick={() => handleNotificationClick(notification)}
     >
       <img
@@ -215,9 +210,9 @@ const Notification = () => {
         }}
       />
       <div className="flex flex-col">
-        <p className="font-medium text-gray-900 dark:text-white">{name}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-400">{email}</p>
-        <p className="text-sm text-blue-500 dark:text-blue-300">
+        <p className={`font-medium  ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>{name}</p>
+        <p className="text-sm text-gray-500">{email}</p>
+        <p className="text-sm text-blue-400 ">
           {type === 'contact' && 'Submitted a contact form'}
           {type === 'order' && 'Placed an order'}
           {type === 'cancelRequest' && 'Requested order cancellation'}
@@ -277,14 +272,14 @@ const Notification = () => {
             <div className="relative">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className={`p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                className={`p-2 rounded-full hover:bg-gray-200  ${
                   theme === 'light' ? 'text-[#646cff]' : 'text-white'
                 }`}
               >
                 <FaCog className="text-lg" />
               </button>
               {showSettings && (
-                <div className="absolute right-0 top-7 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-md z-50 w-36 text-sm">
+                <div className="absolute right-0 top-7 bg-white text-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-md z-50 w-36 text-sm">
                   {[15, 30, 90].map((days) => (
                     <button
                       key={days}

@@ -199,7 +199,7 @@ const AdminOrders = ({ scrollRef }) => {
               Cancel Requests
             </h1>
             {activeTab === 'cancel-requests' && (
-              <div className="w-24 h-1 bg-[#646cff] mt-1 rounded"></div>
+              <div className="w-28 h-1 bg-[#646cff] mt-1 rounded"></div>
             )}
           </div>
         </div>
