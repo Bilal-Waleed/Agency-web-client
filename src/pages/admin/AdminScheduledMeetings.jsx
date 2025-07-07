@@ -34,9 +34,7 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
     }
 
     if (!socketRef.current) {
-      socketRef.current = io(import.meta.env.VITE_BACKEND_URL, {
-        reconnection: false,
-      });
+      socketRef.current = io(import.meta.env.VITE_BACKEND_URL);
 
       socketRef.current.emit('joinAdmin');
 
@@ -47,6 +45,14 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
             return updated.slice(0, meetingsPerPage);
           });
         }
+      });
+
+      socketRef.current.on('meetingDeleted', (meetingId) => {
+        setMeetings((prev) => prev.filter((m) => m._id !== meetingId));
+      });
+
+      socketRef.current.on('connect_error', (error) => {
+        console.error('Socket.IO connection error:', error.message);
       });
     }
 
@@ -97,7 +103,7 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
       } else {
         showToast(response.data.message || 'Failed to accept meeting', 'error');
       }
-    } catch {
+    } catch (error) {
       showToast('Error accepting meeting', 'error');
     }
   };
@@ -113,12 +119,7 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
     if (shouldReload) setPage(1);
   };
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page]);
-
-  const handlePageChange = (event, value) => {
-    setPage(value);
+  const scrollToTop = () => {
     if (scrollRef?.current) {
       scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
@@ -126,8 +127,22 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
     }
   };
 
-  const getAvatarUrl = (user) => {
-    return user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}`;
+  useEffect(() => {
+    scrollToTop();
+  }, [page]);
+
+  const handlePageChange = (event, value) => {
+    setPage(value);
+    scrollToTop();
+  };
+
+  const formatTime = (time) => {
+    if (!time) return time;
+
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const adjustedHours = hours % 12 || 12;
+    return `${adjustedHours}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
   return (
@@ -150,20 +165,20 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
               }`}
             >
               <img
-                src={getAvatarUrl(meeting.user)}
+                src={meeting.userAvatar || meeting.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(meeting.userName)}`}
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(meeting.user.name)}`;
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(meeting.userName)}`;
                 }}
-                alt={meeting.user.name}
+                alt={meeting.userName}
                 className="w-10 h-10 rounded-full"
               />
               <div className="flex flex-col min-w-0 w-full">
                 <p className={`font-semibold truncate ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>
-                  {meeting.user.name}
+                  {meeting.userName}
                 </p>
                 <p className={`text-sm truncate ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  {meeting.user.email}
+                  {meeting.userEmail}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
                   Service: {meeting.service.title}
@@ -172,7 +187,7 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
                   Date: {new Date(meeting.date).toLocaleDateString()}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
-                  Time: {meeting.time}
+                  Time: {formatTime(meeting.time)}
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
                   Status: {meeting.status}
@@ -222,7 +237,7 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
             </div>
           ))}
         </div>
-
+        
         <div className="mt-6">
           <Stack spacing={2} alignItems="center">
             <Pagination

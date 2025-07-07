@@ -10,7 +10,7 @@ const ScheduleMeetingModal = ({
   onClose,
   serviceId,
   serviceTitle,
-  meetingId = null,      
+  meetingId = null,
   initialDate = '',
   initialTime = '',
 }) => {
@@ -22,7 +22,17 @@ const ScheduleMeetingModal = ({
 
   useEffect(() => {
     setDate(initialDate);
-    setTime(initialTime);
+    if (initialTime) {
+      try {
+        const [hours, minutes] = initialTime.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const adjustedHours = hours % 12 || 12;
+        setTime(`${adjustedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+      } catch (error) {
+        console.error('Error formatting initial time:', error.message);
+        setTime(initialTime);
+      }
+    }
   }, [initialDate, initialTime, isOpen]);
 
   const handleSubmit = async (e) => {
@@ -40,42 +50,42 @@ const ScheduleMeetingModal = ({
     }
 
     try {
-    setLoading(true);
-    const token = Cookies.get('token');
+      setLoading(true);
+      const token = Cookies.get('token');
 
-    const url = meetingId
+      const url = meetingId
         ? `${import.meta.env.VITE_BACKEND_URL}/api/scheduled-meetings/${meetingId}/reschedule`
         : `${import.meta.env.VITE_BACKEND_URL}/api/scheduled-meetings`;
 
-    const payload = meetingId
+      const payload = meetingId
         ? { date, time }
         : { userId: user._id, serviceId, date, time };
 
-    const method = meetingId ? 'put' : 'post';
+      const method = meetingId ? 'put' : 'post';
 
-    const response = await axios[method](url, payload, {
+      const response = await axios[method](url, payload, {
         headers: { Authorization: `Bearer ${token}` },
-    });
+      });
 
-    if (response.data.success) {
+      if (response.data.success) {
         showToast(
-        meetingId ? 'Meeting rescheduled successfully' : 'Your meeting has been scheduled.',
-        'success'
+          meetingId ? 'Meeting rescheduled successfully' : 'Your meeting has been scheduled.',
+          'success'
         );
         onClose(true);
-    } else {
+      } else {
         showToast(response.data.message || 'Something went wrong', 'error');
-    }
+      }
     } catch (error) {
-    if (error.response?.status === 409) {
+      if (error.response?.status === 409) {
         showToast(error.response.data.message, 'info');
-    } else if (error.response?.data?.message) {
+      } else if (error.response?.data?.message) {
         showToast(error.response.data.message, 'info');
-    } else {
+      } else {
         showToast('Error submitting the meeting', 'error');
-    }
+      }
     } finally {
-    setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -120,7 +130,7 @@ const ScheduleMeetingModal = ({
           <div className="flex justify-end gap-4">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => onClose(false)}
               className="py-2 px-4 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
             >
               Cancel
