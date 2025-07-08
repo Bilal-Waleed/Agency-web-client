@@ -195,6 +195,20 @@ const Notification = () => {
 
   console.log(`Rendering ${type} notification:`, { name, email, avatar, doc });
 
+  const formatTime = (date) => {
+  const d = new Date(date);
+  const options = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    };
+    return d.toLocaleString('en-US', options);
+  };
+
+
   return (
     <div
       className={`flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer ${theme === 'light' ? 'hover:bg-gray-200' : 'hover:bg-gray-800'}`}
@@ -218,6 +232,7 @@ const Notification = () => {
           {type === 'cancelRequest' && 'Requested order cancellation'}
           {type === 'meeting' && 'Scheduled a meeting'}
         </p>
+        <p className="text-[10px] text-gray-400 mt-1 ">{formatTime(notification.createdAt)}</p>
       </div>
     </div>
   );
@@ -255,7 +270,7 @@ const Notification = () => {
 
       {isDropdownOpen && (
         <div
-        className={`fixed top-12 right-4 lg:right-16 w-80 min-h-[200px] max-h-[400px] overflow-y-auto rounded-xl shadow-2xl z-[9999] transition-all ${
+        className={`fixed top-11 right-4 lg:right-16 w-80 min-h-[200px] max-h-[400px] overflow-y-auto rounded-xl shadow-2xl z-[9999] transition-all ${
         theme === 'light' ? 'bg-white border border-gray-200' : 'bg-gray-900 border border-gray-700'
         }`}
 
@@ -272,9 +287,7 @@ const Notification = () => {
             <div className="relative">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className={`p-2 rounded-full hover:bg-gray-200  ${
-                  theme === 'light' ? 'text-[#646cff]' : 'text-white'
-                }`}
+                className={`p-2 rounded-full hover:bg-gray-200 text-[#646cff]`}
               >
                 <FaCog className="text-lg" />
               </button>
