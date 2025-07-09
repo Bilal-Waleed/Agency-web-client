@@ -129,9 +129,10 @@ const CancelRequests = ({ scrollRef }) => {
   };
 
   const getAvatarUrl = (item) => {
-    const name = item.user?.name || item.name || 'User';
-    return item.user?.avatar || item.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+  const name = item?.userName || item?.name;
+    return item?.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
   };
+
 
   return (
     <div className="flex flex-col justify-between flex-grow min-h-[60vh]">
@@ -146,20 +147,19 @@ const CancelRequests = ({ scrollRef }) => {
               }`}
             >
               <img
-                src={getAvatarUrl(request.order)}
+                src={getAvatarUrl(request)}
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    request.order.user?.name || request.order.name || 'User'
+                    request?.userName
                   )}`;
                 }}
-                alt={request.order.user?.name || request.order.name || 'User'}
+                alt={request?.userName}
                 className="w-10 h-10 rounded-full"
               />
               <div className="flex flex-col min-w-0 w-full">
                 <p className={`font-semibold text-lg break-words ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>
-                  {request.order.user?.name || request.order.name || 'User'} (
-                  {request.order.user?.email || request.order.email || 'No email'})
+                  {request?.userName} ({request?.userEmail})
                 </p>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
                   <strong>Phone:</strong> {request.order.phone}

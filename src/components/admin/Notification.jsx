@@ -183,9 +183,9 @@ const Notification = () => {
     avatar = doc.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
   } 
   else if (type === 'cancelRequest') {
-    name = doc.order?.user?.name || name;
-    email = doc.order?.user?.email || email;
-    avatar = doc.order?.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+  name = doc.userName || name;
+  email = doc.userEmail || email;
+  avatar = doc.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
   } 
   else if (type === 'meeting') {
     name = doc.user?.name || name;
