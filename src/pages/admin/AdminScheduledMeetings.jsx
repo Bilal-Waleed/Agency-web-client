@@ -39,13 +39,27 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
       socketRef.current.emit('joinAdmin');
 
       socketRef.current.on('meetingChange', (meeting) => {
-        if (meeting?._id && page === 1) {
-          setMeetings((prev) => {
-            const updated = [meeting, ...prev.filter((m) => m._id !== meeting._id)];
-            return updated.slice(0, meetingsPerPage);
-          });
-        }
+
+    if (meeting.operationType === 'insert') {
+      showToast('New meeting scheduled by user', 'info');
+    }
+  });
+
+  socketRef.current.on('meetingUI', ({ action, data }) => {
+    if (action === 'insert' && page === 1) {
+      setMeetings((prev) => {
+        const updated = [data, ...prev.filter((m) => m._id !== data._id)];
+        return updated.slice(0, meetingsPerPage);
       });
+    }
+
+    if (action === 'update') {
+      setMeetings((prev) =>
+        prev.map((m) => (m._id === data._id ? { ...m, ...data } : m))
+      );
+    }
+  });
+
 
       socketRef.current.on('meetingDeleted', (meetingId) => {
         setMeetings((prev) => prev.filter((m) => m._id !== meetingId));
@@ -131,7 +145,7 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
     scrollToTop();
   }, [page]);
 
-  const handlePageChange = (event, value) => {
+  const handlePageChange = ( value) => {
     setPage(value);
     scrollToTop();
   };
@@ -237,7 +251,7 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
             </div>
           ))}
         </div>
-        
+
         <div className="mt-6">
           <Stack spacing={2} alignItems="center">
             <Pagination
