@@ -138,7 +138,7 @@ const Notification = () => {
     }
     const diffTime = Math.abs(now - notificationDate);
     const diffDays = diffTime / (1000 * 60 * 60 * 24);
-    console.log(`Notification ${notification.type} diffDays:`, diffDays);
+    // console.log(`Notification ${notification.type} diffDays:`, diffDays);
     return diffDays <= filterDays;
   });
 

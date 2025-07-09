@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
 import { io } from 'socket.io-client';
@@ -9,6 +9,11 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
 import Loader from '../../components/Loader';
+import dayjs from 'dayjs';
+import { FaRegCalendarAlt } from 'react-icons/fa';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+
 import {
   BarChart,
   LineChart,
@@ -22,28 +27,28 @@ const AdminDashboard = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [daysFilter, setDaysFilter] = useState(15);
   const [lastUpdated, setLastUpdated] = useState(null);
   const chartTextColor = theme === 'light' ? '#1f2937' : '#ffffff'; 
+  const [startDate, setStartDate] = useState(dayjs().subtract(15, 'day'));
+  const [endDate, setEndDate] = useState(dayjs());
 
-  const fetchData = async (selectedDays = daysFilter, showLoader = true) => {
-    if (showLoader) setLoading(true);
-    try {
-      const token = Cookies.get('token');
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/dashboard?days=${selectedDays}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setDashboardData(response.data.data);
-      setLastUpdated(new Date());
-    } catch (error) {
-      const message = error.response?.data?.message || 'Error loading Dashboard data.';
-      showToast(message, 'error');
-    } finally {
-      if (showLoader) setLoading(false);
-    }
-  };
-
-
+  const fetchData = async (start, end, showLoader = true) => {
+  if (showLoader) setLoading(true);
+  try {
+    const token = Cookies.get('token');
+    const response = await axios.get(
+      `${import.meta.env.VITE_BACKEND_URL}/api/admin/dashboard?start=${start}&end=${end}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setDashboardData(response.data.data);
+    setLastUpdated(new Date());
+  } catch (error) {
+    const message = error.response?.data?.message || 'Error loading Dashboard data.';
+    showToast(message, 'error');
+  } finally {
+    if (showLoader) setLoading(false);
+  }
+};
 
   const [dashboardData, setDashboardData] = useState({
     monthlyOrders: [],
@@ -60,22 +65,27 @@ const AdminDashboard = () => {
 
     socket.emit('joinAdmin');
 
-    fetchData(daysFilter, true);
+    const handleUpdate = () => {
+      console.log("Realtime triggered");
+      fetchData(startDate, endDate, false);
+    };
 
-    socket.on('orderChange', fetchData);
-    socket.on('userChange', fetchData);
-    socket.on('contactChange', fetchData);
-    socket.on('serviceChange', fetchData);
+    fetchData(startDate, endDate, true);
+
+    socket.on('orderChange', handleUpdate);
+    socket.on('userChange', handleUpdate);
+    socket.on('contactChange', handleUpdate);
+    socket.on('serviceChange', handleUpdate);
 
     return () => {
       socket.emit('leaveAdmin');
-      socket.off('orderChange', fetchData);
-      socket.off('userChange', fetchData);
-      socket.off('contactChange', fetchData);
-      socket.off('serviceChange', fetchData);
+      socket.off('orderChange', handleUpdate);
+      socket.off('userChange', handleUpdate);
+      socket.off('contactChange', handleUpdate);
+      socket.off('serviceChange', handleUpdate);
       socket.disconnect();
     };
-  }, [user, navigate]);
+  }, [user, navigate, startDate, endDate]);
 
   const safeData = {
     monthlyOrders: dashboardData.monthlyOrders.filter(item => item._id),
@@ -118,21 +128,62 @@ const AdminDashboard = () => {
             <div className="w-30 h-1 bg-[#646cff] mt-2"></div>
           </h1>
 
-          <select
-            value={daysFilter}
-            onChange={(e) => {
-              const value = parseInt(e.target.value);
-              setDaysFilter(value);
-              fetchData(value, false);
-            }}
-            className="ml-auto p-2 border rounded text-[8px] sm:text-xs text-black dark:text-white dark:bg-gray-800"
-          >
-            <option value={15}>Last 15 Days</option>
-            <option value={30}>Last 30 Days</option>
-            <option value={90}>Last 90 Days</option>
-            <option value={180}>Last 180 Days</option>
-          </select>
+        <div className="flex gap-2 items-center justify-end flex-wrap w-full sm:w-auto">
+          <div className="relative w-[110px] sm:w-[130px] md:w-[150px]">
+            <DatePicker
+              selected={startDate.toDate()}
+              onChange={(date) => {
+                const newDate = dayjs(date);
+                setStartDate(newDate);
+                if (endDate && newDate) {
+                  fetchData(newDate, endDate);
+                }
+              }}
+              dateFormat="yyyy-MM-dd"
+              placeholderText="Start"
+              ref={(ref) => (window.startRef = ref)}
+              className={`w-full py-[6px] pr-8 pl-2 rounded text-xs sm:text-sm ${
+                theme === 'dark'
+                  ? 'bg-white text-black border border-black'
+                  : 'bg-black text-white border border-white'
+              }`}
+            />
+            <FaRegCalendarAlt
+              onClick={() => window.startRef.setOpen(true)}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs sm:text-sm cursor-pointer ${
+                theme === 'dark' ? 'text-black' : 'text-white'
+              }`}
+            />
+          </div>
+
+          <div className="relative w-[110px] sm:w-[130px] md:w-[150px]">
+            <DatePicker
+              selected={endDate.toDate()}
+              onChange={(date) => {
+                const newDate = dayjs(date);
+                setEndDate(newDate);
+                if (startDate && newDate) {
+                  fetchData(startDate, newDate);
+                }
+              }}
+              dateFormat="yyyy-MM-dd"
+              placeholderText="End"
+              ref={(ref) => (window.endRef = ref)}
+              className={`w-full py-[6px] pr-8 pl-2 rounded text-xs sm:text-sm ${
+                theme === 'dark'
+                  ? 'bg-white text-black border border-black'
+                  : 'bg-black text-white border border-white'
+              }`}
+            />
+            <FaRegCalendarAlt
+              onClick={() => window.endRef.setOpen(true)}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs sm:text-sm cursor-pointer ${
+                theme === 'dark' ? 'text-black' : 'text-white'
+              }`}
+            />
+          </div>
         </div>
+      </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
           {safeData.monthlyOrders.length > 0 && (
@@ -221,7 +272,8 @@ const AdminDashboard = () => {
                   xAxis={[{
                     scaleType: 'band',
                     data: safeData.monthlyContacts.map(d => d._id),
-                    tickLabelStyle: { fill: chartTextColor }
+                    tickLabelStyle: { fill: chartTextColor },
+                    
                   }]}
                   series={[{
                     data: safeData.monthlyContacts.map(d => d.count),
