@@ -56,7 +56,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
     setSubmittingOrderId(orderId);
     try {
       const token = Cookies.get('token');
-      const res =  await axios.post(
+      const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/admin/cancel-requests`,
         { orderId, reason },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -173,45 +173,61 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
                   <Typography sx={{ color: theme === 'light' ? 'text-gray-500' : 'text-gray-500', fontSize: '0.75rem', pt: 1 }}>
                    <strong> Created:  </strong> {new Date(order.createdAt).toLocaleDateString()}
                   </Typography>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    size="small"
-                    onClick={() => toggleCancelInput(order._id)}
-                    disabled={submittingOrderId === order._id}
-                    sx={{ mt: 2, mb: 1 }}
-                  >
-                    {showCancelInput[order._id] ? 'Hide Cancel Request' : 'Cancel Order Request'}
-                  </Button>
-                  {showCancelInput[order._id] && (
-                    <div className="mt-2">
-                      <TextField
-                        fullWidth
-                        label="Reason for Cancellation (minimum 10 words)"
-                        value={cancelReason[order._id] || ''}
-                        onChange={(e) =>
-                          setCancelReason((prev) => ({
-                            ...prev,
-                            [order._id]: e.target.value,
-                          }))
-                        }
-                        multiline
-                        rows={3}
-                        sx={{ mb: 2 ,
-                            '& .MuiInputBase-input': {
-                            color: 'white',
-                            },
-                        }}
-                      />
+                  {order.status === 'completed' ? (
+                    <Typography
+                      sx={{
+                        mt: 2,
+                        mb: 1,
+                        color: theme === 'light' ? '#10B981' : '#34D399',
+                        fontWeight: 'medium',
+                      }}
+                    >
+                      Order Completed Successfully, Check Email
+                    </Typography>
+                  ) : (
+                    <>
                       <Button
                         variant="contained"
-                        color="primary"
-                        onClick={() => handleCancelRequest(order._id)}
+                        color="error"
+                        size="small"
+                        onClick={() => toggleCancelInput(order._id)}
                         disabled={submittingOrderId === order._id}
+                        sx={{ mt: 2, mb: 1 }}
                       >
-                        Submit
+                        {showCancelInput[order._id] ? 'Hide Cancel Request' : 'Cancel Order Request'}
                       </Button>
-                    </div>
+                      {showCancelInput[order._id] && (
+                        <div className="mt-2">
+                          <TextField
+                            fullWidth
+                            label="Reason for Cancellation (minimum 10 words)"
+                            value={cancelReason[order._id] || ''}
+                            onChange={(e) =>
+                              setCancelReason((prev) => ({
+                                ...prev,
+                                [order._id]: e.target.value,
+                              }))
+                            }
+                            multiline
+                            rows={3}
+                            sx={{
+                              mb: 2,
+                              '& .MuiInputBase-input': {
+                                color: 'white',
+                              },
+                            }}
+                          />
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleCancelRequest(order._id)}
+                            disabled={submittingOrderId === order._id}
+                          >
+                            Submit
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ))}

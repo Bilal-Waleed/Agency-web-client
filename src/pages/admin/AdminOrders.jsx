@@ -13,6 +13,7 @@ import Loader from '../../components/Loader';
 import { FaDownload } from 'react-icons/fa';
 import CancelRequests from '../../components/admin/CancelRequests';
 import CancelOrderModal from '../../components/admin/CancelOrderModal';
+import CompleteOrderModal from '../../components/admin/CompleteOrderModal';
 
 const AdminOrders = ({ scrollRef }) => {
   const { theme } = useTheme();
@@ -26,6 +27,7 @@ const AdminOrders = ({ scrollRef }) => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'orders');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const ordersPerPage = 10;
   const socketRef = useRef(null);
@@ -104,6 +106,57 @@ const AdminOrders = ({ scrollRef }) => {
     }
   };
 
+  const handleCompleteOrder = async (orderId, message, files) => {
+  const MAX_SINGLE_FILE_SIZE = 25 * 1024 * 1024; 
+  const MAX_TOTAL_SIZE = 25 * 1024 * 1024;      
+
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+
+  for (let file of files) {
+    if (file.size > MAX_SINGLE_FILE_SIZE) {
+      showToast(`${file.name} is larger than 25MB`, 'error');
+      return;
+    }
+  }
+
+  if (totalSize > MAX_TOTAL_SIZE) {
+    showToast('Total file size exceeds 25MB', 'error');
+    return;
+  }
+
+  try {
+    const token = Cookies.get('token');
+    const formData = new FormData();
+    formData.append('message', message || '');
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${orderId}/complete`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    showToast('Your response sent successfully', 'success');
+    fetchOrders(false);
+  } catch (error) {
+    console.error('Error completing order:', error);
+
+    const message =
+      error?.response?.data?.message ||
+      'Failed to complete order. Please try again.';
+
+    showToast(message, 'error');
+  }
+};
+
+
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate('/');
@@ -118,7 +171,7 @@ const AdminOrders = ({ scrollRef }) => {
       socketRef.current.emit('joinAdmin');
 
       socketRef.current.on('orderChange', (change) => {
-        if (['insert', 'delete'].includes(change.operationType)) {
+        if (['insert', 'delete', 'update'].includes(change.operationType)) {
           fetchOrders(false);
         }
       });
@@ -162,6 +215,11 @@ const AdminOrders = ({ scrollRef }) => {
   const openCancelModal = (orderId) => {
     setSelectedOrderId(orderId);
     setIsCancelModalOpen(true);
+  };
+
+  const openCompleteModal = (orderId) => {
+    setSelectedOrderId(orderId);
+    setIsCompleteModalOpen(true);
   };
 
   return (
@@ -323,26 +381,60 @@ const AdminOrders = ({ scrollRef }) => {
                           <strong>Created:</strong>{' '}
                           {new Date(order.createdAt).toLocaleDateString()}
                         </p>
-                        <Button
-                          onClick={() => openCancelModal(order._id)}
-                          variant="contained"
-                          size="small"
-                          sx={{
-                            textTransform: 'none',
-                            fontWeight: 'medium',
-                            backgroundColor:
-                              theme === 'light' ? '#dc2626' : '#ef4444',
-                            '&:hover': {
-                              backgroundColor:
-                                theme === 'light' ? '#dc2626' : '#ef4444',
-                              transform: 'scale(1.05)',
-                              transition: 'all 0.2s ease-in-out',
-                            },
-                            width: 'fit-content',
-                          }}
-                        >
-                          Cancel Order
-                        </Button>
+                        {order.status === 'completed' ? (
+                          <Typography
+                            sx={{
+                              color: theme === 'light' ? '#10B981' : '#34D399',
+                              fontWeight: 'medium',
+                            }}
+                          >
+                            Order Completed
+                          </Typography>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => openCancelModal(order._id)}
+                              variant="contained"
+                              size="small"
+                              sx={{
+                                textTransform: 'none',
+                                fontWeight: 'medium',
+                                backgroundColor:
+                                  theme === 'light' ? '#dc2626' : '#ef4444',
+                                '&:hover': {
+                                  backgroundColor:
+                                    theme === 'light' ? '#dc2626' : '#ef4444',
+                                  transform: 'scale(1.05)',
+                                  transition: 'all 0.2s ease-in-out',
+                                },
+                                width: 'fit-content',
+                              }}
+                            >
+                              Cancel Order
+                            </Button>
+                            <Button
+                              onClick={() => openCompleteModal(order._id)}
+                              variant="outlined"
+                              size="small"
+                              sx={{
+                                textTransform: 'none',
+                                fontWeight: 'medium',
+                                color: '#10B981',
+                                borderColor: '#10B981', 
+                                '&:hover': {
+                                  backgroundColor: theme === 'light' ? '#d1fae5' : '#064e3b', 
+                                  borderColor: '#10B981',
+                                  color: theme === 'light' ? '#059669' : '#6ee7b7',
+                                  transform: 'scale(1.05)',
+                                  transition: 'all 0.2s ease-in-out',
+                                },
+                                width: 'fit-content',
+                              }}
+                            >
+                              Complete Order
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -384,6 +476,12 @@ const AdminOrders = ({ scrollRef }) => {
           isOpen={isCancelModalOpen}
           onClose={() => setIsCancelModalOpen(false)}
           onSubmit={handleCancelOrder}
+          orderId={selectedOrderId}
+        />
+        <CompleteOrderModal
+          isOpen={isCompleteModalOpen}
+          onClose={() => setIsCompleteModalOpen(false)}
+          onSubmit={handleCompleteOrder}
           orderId={selectedOrderId}
         />
       </div>
