@@ -75,7 +75,7 @@ const Contact = () => {
             <div className="w-16 h-1 bg-[#646cff] mt-2"></div>
           </h1>
           <img
-            src="./images/support.png"
+            src="/images/support.png"
             alt="Contact"
             className="w-full max-w-md h-auto md:mx-auto sm:mx-auto"
           />

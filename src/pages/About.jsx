@@ -49,7 +49,7 @@ const About = ({scrollRef}) => {
         </div>
         <div className="lg:w-1/2 w-full flex justify-center mt-8 lg:mt-0">
           <img
-            src="./images/about.png" 
+            src="/images/about.png" 
             alt="About Illustration"
             className="w-full max-w-md h-auto"
           />

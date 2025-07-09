@@ -117,7 +117,7 @@ const Register = () => {
       >
         <div className="flex flex-col lg:flex-row items-center max-w-4xl w-full gap-8 lg:gap-20">
           <img
-            src="./images/register.png"
+            src="/images/register.png"
             alt="Registration"
             className="w-full max-w-xs lg:max-w-sm lg:w-1/2 object-contain"
           />

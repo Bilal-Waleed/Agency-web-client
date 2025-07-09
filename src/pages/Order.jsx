@@ -204,7 +204,7 @@ const Order = () => {
             Fill in the details below to help us understand your needs:
           </p>
           <img
-            src="./images/info.png"
+            src="/images/info.png"
             alt="Order"
             className="w-full max-w-md h-auto md:mx-auto sm:mx-auto"
           />

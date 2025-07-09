@@ -4,7 +4,6 @@ import { useTheme } from "../context/ThemeContext";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import { showToast } from "../components/Toast";
-import loginImage from "../../public/images/login.png";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 const resetPasswordSchema = Yup.object().shape({
@@ -67,7 +66,7 @@ const ResetPassword = () => {
     >
       <div className="flex flex-col lg:flex-row items-center max-w-4xl w-full gap-8 lg:gap-20">
         <img
-          src={loginImage}
+          src="/images/login.png"
           alt="Reset Password"
           className="w-full max-w-xs lg:max-w-sm lg:w-1/2 object-contain"
         />

@@ -57,7 +57,7 @@ const ForgotPassword = () => {
     >
       <div className="flex flex-col lg:flex-row items-center max-w-4xl w-full gap-8 lg:gap-20">
         <img
-          src="./images/login.png"
+          src="/images/login.png"
           alt="Forgot Password"
           className="w-full max-w-xs lg:max-w-sm lg:w-1/2 object-contain"
         />

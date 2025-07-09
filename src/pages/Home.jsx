@@ -31,7 +31,7 @@ const Home = ({ scrollRef }) => {
         </div>
         <div className="lg:w-2/5 w-full flex justify-center mt-8 lg:mt-0">
           <img
-            src="./images/home.png"
+            src="/images/home.png"
             alt="Home Illustration"
             className="w-full max-w-md h-auto"
           />

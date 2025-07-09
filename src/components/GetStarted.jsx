@@ -13,7 +13,7 @@ const GetStarted = () => {
     >
       <div className="lg:w-2/5 w-full flex justify-center">
         <img
-          src="./images/design.png" 
+          src="/images/design.png" 
           alt="Get Started Illustration"
           className="w-full max-w-md h-auto"
         />
