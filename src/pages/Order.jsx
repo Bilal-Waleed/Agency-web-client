@@ -18,8 +18,8 @@ const validationSchema = Yup.object({
     .email('Invalid email address')
     .required('Email is required'),
   phone: Yup.string()
-  .matches(/^(\+?\d{1,4})?[\s.-]?(\(?\d{2,4}\)?[\s.-]?)?[\d\s.-]{6,12}$/, 'Invalid phone number')
-  .required('Phone number is required'),
+    .matches(/^(\+?\d{1,4})?[\s.-]?(\(?\d{2,4}\)?[\s.-]?)?[\d\s.-]{6,12}$/, 'Invalid phone number')
+    .required('Phone number is required'),
   projectType: Yup.string().required('Project type is required'),
   projectBudget: Yup.string().required('Project budget is required'),
   timeline: Yup.date()
@@ -73,75 +73,74 @@ const Order = () => {
   };
 
   const handleChange = (e) => {
-  const { name, value, files } = e.target;
-  setFormData((prev) => ({
-    ...prev,
-    [name]: files ? Array.from(files) : value,
-  }));
-};
-
+    const { name, value, files } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: files ? Array.from(files) : value,
+    }));
+  };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    await validationSchema.validate(formData, { abortEarly: false });
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await validationSchema.validate(formData, { abortEarly: false });
 
-    const formDataToSend = new FormData();
-    Object.keys(formData).forEach((key) => {
-      if (key === 'files') {
-        formData.files.forEach((file) => {
-          formDataToSend.append('files', file); 
-        });
-      } else {
-        formDataToSend.append(key, formData[key]);
+      const formDataToSend = new FormData();
+      Object.keys(formData).forEach((key) => {
+        if (key === 'files') {
+          formData.files.forEach((file) => {
+            formDataToSend.append('files', file); 
+          });
+        } else {
+          formDataToSend.append(key, formData[key]);
+        }
+      });
+
+      const token = Cookies.get('token');
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/order`, formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setFormData({
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: '',
+        projectType: '',
+        projectBudget: '',
+        timeline: '',
+        projectDescription: '',
+        paymentReference: '',
+        paymentMethod: '',
+        files: [],
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''; 
       }
-    });
-
-    const token = Cookies.get('token');
-    const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/order`, formDataToSend, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    setFormData({
-      name: user?.name || '',
-      email: user?.email || '',
-      phone: '',
-      projectType: '',
-      projectBudget: '',
-      timeline: '',
-      projectDescription: '',
-      paymentReference: '',
-      paymentMethod: '',
-      files: [],
-    });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''; 
+      setErrors({});
+      showToast(`Thanks for your order, ${formData.name}! Order ID: ${response.data.orderId}`, 'success');
+    } catch (err) {
+      if (err.name === 'ValidationError') {
+        const newErrors = {};
+        err.inner.forEach((error) => {
+          newErrors[error.path] = error.message;
+        });
+        setErrors(newErrors);
+        showToast('Please fix the form errors', 'error');
+      } else if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
+        showToast('No internet connection. Please check your network.', 'error');
+      } else {
+        const msg = err.response?.data?.error || 'Failed to submit order';
+        setErrors({ api: msg });
+        showToast(msg, 'error');
+      }
+    } finally {
+      setLoading(false);
     }
-    setErrors({});
-    showToast(`Thanks for your order, ${formData.name}!`, 'success');
-  } catch (err) {
-    if (err.name === 'ValidationError') {
-    const newErrors = {};
-    err.inner.forEach((error) => {
-      newErrors[error.path] = error.message;
-    });
-    setErrors(newErrors);
-    showToast('Please fix the form errors', 'error');
-  } else if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
-    showToast('No internet connection. Please check your network.', 'error');
-  } else {
-    const msg = err.response?.data?.error || 'Failed to submit order';
-    setErrors({ api: msg });
-    showToast(msg, 'error');
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div

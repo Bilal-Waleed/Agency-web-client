@@ -31,7 +31,6 @@ const CancelRequests = ({ scrollRef }) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log('Fetched cancel requests:', response.data.data);
       setCancelRequests(response.data.data);
       setTotalPages(response.data.totalPages);
     } catch (error) {
@@ -57,11 +56,16 @@ const CancelRequests = ({ scrollRef }) => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      showToast(res?.data?.message || 'Cancel request accepted and order deleted', 'success');
-      setCancelRequests((prev) => prev.filter((req) => req._id !== requestId));
+      showToast(res?.data?.message || 'Cancel request accepted successfully', 'success');
+      fetchCancelRequests(true);
     } catch (error) {
       console.error('Error accepting cancel request:', error);
-      showToast('Failed to accept cancel request', 'error');
+      showToast(
+        error.response?.data?.message || 'Failed to accept cancel request',
+        'error'
+      );
+    } finally {
+      setDisabledRequests(prev => ({ ...prev, [requestId]: false }));
     }
   };
 
@@ -74,11 +78,16 @@ const CancelRequests = ({ scrollRef }) => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      showToast(res?.data?.message || 'Cancel request declined', 'success');
-      setCancelRequests((prev) => prev.filter((req) => req._id !== requestId));
+      showToast(res?.data?.message || 'Cancel request declined successfully', 'success');
+      fetchCancelRequests(true);
     } catch (error) {
       console.error('Error declining cancel request:', error);
-      showToast('Failed to decline cancel request', 'error');
+      showToast(
+        error.response?.data?.message || 'Failed to decline cancel request',
+        'error'
+      );
+    } finally {
+      setDisabledRequests(prev => ({ ...prev, [requestId]: false }));
     }
   };
 
@@ -96,11 +105,10 @@ const CancelRequests = ({ scrollRef }) => {
       socketRef.current.emit('joinAdmin');
 
       socketRef.current.on('cancelRequestChange', (change) => {
-        console.log('Received cancelRequestChange:', change);
-       if (change.operationType === 'insert') {
-            fetchCancelRequests(true); 
-       }
-        });
+        if (['insert', 'delete', 'update'].includes(change.operationType)) {
+          fetchCancelRequests(true);
+        }
+      });
     }
 
     fetchCancelRequests();
@@ -116,10 +124,14 @@ const CancelRequests = ({ scrollRef }) => {
   }, [user, navigate, page]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page]);
+    if (scrollRef?.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [page, scrollRef]);
 
-  const handlePageChange = (_, value) => {
+  const handlePageChange = (event, value) => {
     setPage(value);
     if (scrollRef?.current) {
       scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
@@ -129,21 +141,26 @@ const CancelRequests = ({ scrollRef }) => {
   };
 
   const getAvatarUrl = (item) => {
-  const name = item?.userName || item?.name;
-    return item?.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+    return item?.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.userName)}`;
   };
 
-
   return (
-    <div className="flex flex-col justify-between flex-grow min-h-[60vh]">
-      <div className="space-y-4">
-        {loading && <Loader />}
-        {cancelRequests?.length > 0 ? (
-          cancelRequests.map((request) => (
+    <div className="space-y-4 flex-grow">
+      {loading ? (
+        <Loader />
+      ) : cancelRequests.length === 0 ? (
+        <div className="text-center text-gray-500 mt-4 text-lg">
+          No cancel requests found.
+        </div>
+      ) : (
+        <>
+          {cancelRequests.map((request) => (
             <div
               key={request._id}
-              className={`flex flex-wrap sm:flex-nowrap items-start gap-4 p-4 rounded-lg transform transition-transform duration-200 hover:-translate-x-1 relative ${
-                theme === 'light' ? 'bg-white shadow-sm' : 'bg-gray-800 shadow-md'
+              className={`relative flex flex-wrap sm:flex-nowrap items-start gap-4 p-6 rounded-lg transform transition-transform duration-200 hover:-translate-y-1 ${
+                theme === 'light'
+                  ? 'bg-white shadow-lg border border-gray-200'
+                  : 'bg-gray-800 shadow-xl border border-gray-700'
               }`}
             >
               <img
@@ -151,88 +168,92 @@ const CancelRequests = ({ scrollRef }) => {
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    request?.userName
+                    request.userName
                   )}`;
                 }}
-                alt={request?.userName}
-                className="w-10 h-10 rounded-full"
+                alt={request.userName}
+                className="w-12 h-12 rounded-full"
               />
               <div className="flex flex-col min-w-0 w-full">
-                <p className={`font-semibold text-lg break-words ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>
-                  {request?.userName} ({request?.userEmail})
+                <p
+                  className={`font-semibold text-lg break-words ${
+                    theme === 'light' ? 'text-gray-900' : 'text-gray-100'
+                  }`}
+                >
+                  {request.userName}{' '}
+                  <span className="text-sm font-normal">({request.userEmail})</span>
                 </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  <strong>Phone:</strong> {request.order.phone}
+                <p
+                  className={`text-sm ${
+                    theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                  }`}
+                >
+                  <strong>Order ID:</strong> {request.order.orderId}
                 </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                <p
+                  className={`text-sm ${
+                    theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                  }`}
+                >
+                  <strong>Reason:</strong> {request.reason}
+                </p>
+                <p
+                  className={`text-sm ${
+                    theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                  }`}
+                >
                   <strong>Project Type:</strong> {request.order.projectType}
                 </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  <strong>Budget:</strong> {request.order.projectBudget}
+                <p
+                  className={`text-sm  break-words sm:break-normal  ${
+                    theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                  }`}
+                >
+                  <strong>Files:</strong>{' '} {request.order.filesList}
                 </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  <strong>Timeline:</strong> {new Date(request.order.timeline).toLocaleDateString()}
+                <p
+                  className={`text-xs mb-1 mt-2 ${
+                    theme === 'light' ? 'text-gray-500' : 'text-gray-500'
+                  }`}
+                >
+                  <strong>Requested:</strong>{' '}
+                  {new Date(request.createdAt).toLocaleDateString()}
                 </p>
-                <p className={`text-sm break-words ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  <strong>Description:</strong> {request.order.projectDescription}
-                </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  <strong>Payment Reference:</strong> {request.order.paymentReference}
-                </p>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  <strong>Payment Method:</strong> {request.order.paymentMethod}
-                </p>
-                <p className={`text-sm break-words whitespace-normal ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  <strong>Files:</strong> {request.order.filesList}
-                </p>
-                <p className={`text-sm break-words ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-                  <strong>Cancellation Reason:</strong> {request.reason}
-                </p>
-                <p className={`text-xs pt-1 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
-                  <strong>Order Created:</strong> {new Date(request.order.createdAt).toLocaleDateString()}
-                </p>
-
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-2 mt-2">
                   <Button
                     onClick={() => handleAcceptCancelRequest(request._id)}
                     variant="contained"
-                    size="medium"
+                    size="small"
                     disabled={disabledRequests[request._id]}
                     sx={{
                       textTransform: 'none',
-                      fontWeight: '700',
-                      borderColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
+                      fontWeight: 'medium',
+                      backgroundColor: theme === 'light' ? '#10B981' : '#34D399',
                       '&:hover': {
-                        transform: 'scale(1.03)',
+                        backgroundColor: theme === 'light' ? '#059669' : '#6ee7b7',
+                        transform: 'scale(1.05)',
                         transition: 'all 0.2s ease-in-out',
                       },
-                      ...disabledRequests[request._id] && {
-                        backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
-                        color: theme === 'light' ? '#9ca3af' : '#9ca3af',
-                      },
+                      width: 'fit-content',
                     }}
                   >
                     Accept
                   </Button>
-
                   <Button
                     onClick={() => handleDeclineCancelRequest(request._id)}
-                    variant="outlined"
-                    size="medium"
+                    variant="contained"
+                    size="small"
                     disabled={disabledRequests[request._id]}
                     sx={{
                       textTransform: 'none',
-                      fontWeight: '500',
-                      borderColor: theme === 'light' ? '#ef4444' : '#f87171',
-                      color: theme === 'light' ? '#ef4444' : '#f87171',
+                      fontWeight: 'medium',
+                      backgroundColor: theme === 'light' ? '#dc2626' : '#ef4444',
                       '&:hover': {
-                        transform: 'scale(1.03)',
+                        backgroundColor: theme === 'light' ? '#b91c1c' : '#f87171',
+                        transform: 'scale(1.05)',
                         transition: 'all 0.2s ease-in-out',
                       },
-                      ...disabledRequests[request._id] && {
-                        backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
-                        color: theme === 'light' ? '#9ca3af' : '#9ca3af',
-                      },
+                      width: 'fit-content',
                     }}
                   >
                     Decline
@@ -240,38 +261,33 @@ const CancelRequests = ({ scrollRef }) => {
                 </div>
               </div>
             </div>
-          ))
-        ) : !loading ? (
-          <div className={`text-center text-lg ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-            No cancel requests found.
+          ))}
+          <div className="mt-6">
+            <Stack spacing={2} alignItems="center">
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={handlePageChange}
+                variant="outlined"
+                shape="rounded"
+                sx={{
+                  '& .MuiPaginationItem-root': {
+                    color: theme === 'light' ? '#000' : '#fff',
+                    backgroundColor: theme === 'light' ? '#fff' : '#374151',
+                    '&:hover': {
+                      backgroundColor: theme === 'light' ? '#e5e7eb' : '#4b5563',
+                    },
+                    '&.Mui-selected': {
+                      backgroundColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
+                      color: '#fff',
+                    },
+                  },
+                }}
+              />
+            </Stack>
           </div>
-        ) : null}
-      </div>
-
-      <div className="mt-6">
-        <Stack spacing={2} alignItems="center">
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={handlePageChange}
-            variant="outlined"
-            shape="rounded"
-            sx={{
-              '& .MuiPaginationItem-root': {
-                color: theme === 'light' ? '#000' : '#fff',
-                backgroundColor: theme === 'light' ? '#fff' : '#374151',
-                '&:hover': {
-                  backgroundColor: theme === 'light' ? '#e5e7eb' : '#4b5563',
-                },
-                '&.Mui-selected': {
-                  backgroundColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
-                  color: '#fff',
-                },
-              },
-            }}
-          />
-        </Stack>
-      </div>
+        </>
+      )}
     </div>
   );
 };

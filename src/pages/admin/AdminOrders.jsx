@@ -107,55 +107,54 @@ const AdminOrders = ({ scrollRef }) => {
   };
 
   const handleCompleteOrder = async (orderId, message, files) => {
-  const MAX_SINGLE_FILE_SIZE = 25 * 1024 * 1024; 
-  const MAX_TOTAL_SIZE = 25 * 1024 * 1024;      
+    const MAX_SINGLE_FILE_SIZE = 25 * 1024 * 1024; 
+    const MAX_TOTAL_SIZE = 25 * 1024 * 1024;      
 
-  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
 
-  for (let file of files) {
-    if (file.size > MAX_SINGLE_FILE_SIZE) {
-      showToast(`${file.name} is larger than 25MB`, 'error');
+    for (let file of files) {
+      if (file.size > MAX_SINGLE_FILE_SIZE) {
+        showToast(`${file.name} is larger than 25MB`, 'error');
+        return;
+      }
+    }
+
+    if (totalSize > MAX_TOTAL_SIZE) {
+      showToast('Total file size exceeds 25MB', 'error');
       return;
     }
-  }
 
-  if (totalSize > MAX_TOTAL_SIZE) {
-    showToast('Total file size exceeds 25MB', 'error');
-    return;
-  }
+    try {
+      const token = Cookies.get('token');
+      const formData = new FormData();
+      formData.append('message', message || '');
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
 
-  try {
-    const token = Cookies.get('token');
-    const formData = new FormData();
-    formData.append('message', message || '');
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${orderId}/complete`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
 
-    await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${orderId}/complete`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
+      showToast('Your response sent successfully', 'success');
+      fetchOrders(false);
+    } catch (error) {
+      console.error('Error completing order:', error);
 
-    showToast('Your response sent successfully', 'success');
-    fetchOrders(false);
-  } catch (error) {
-    console.error('Error completing order:', error);
+      const message =
+        error?.response?.data?.message ||
+        'Failed to complete order. Please try again.';
 
-    const message =
-      error?.response?.data?.message ||
-      'Failed to complete order. Please try again.';
-
-    showToast(message, 'error');
-  }
-};
-
+      showToast(message, 'error');
+    }
+  };
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -314,6 +313,13 @@ const AdminOrders = ({ scrollRef }) => {
                       >
                         {order.name}{' '}
                         <span className="text-sm font-normal">({order.email})</span>
+                      </p>
+                      <p
+                        className={`text-sm ${
+                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                        }`}
+                      >
+                        <strong>Order ID:</strong> {order.orderId}
                       </p>
                       <p
                         className={`text-sm ${

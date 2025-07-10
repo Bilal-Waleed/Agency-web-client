@@ -14,16 +14,23 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
   const fetchUserOrders = async () => {
     try {
       const token = Cookies.get('token');
+      if (!token) {
+        showToast('Please log in to view orders', 'error');
+        return;
+      }
       const response = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/api/order/user`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setOrders(response.data.data);
+      setOrders(response.data.data || []);
     } catch (error) {
       console.error('Error fetching user orders:', error);
-      showToast('Failed to load orders', 'error');
+      showToast(
+        error.response?.data?.message || 'Failed to load orders',
+        'error'
+      );
     }
   };
 
@@ -52,6 +59,11 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
       showToast('Please provide a reason for cancellation', 'error');
       return;
     }
+    if (reason.replace(/\s/g, '').length < 10) {
+      showToast('Reason must be at least 10 characters (excluding spaces)', 'error');
+      return;
+    }
+
 
     setSubmittingOrderId(orderId);
     try {
@@ -61,12 +73,19 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
         { orderId, reason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      showToast('Your cancel order request submitted, wait for admin response', 'success');
+      showToast(
+        res?.data?.message || 'Your cancel order request submitted, wait for admin response',
+        'success'
+      );
       toggleCancelInput(orderId);
+      fetchUserOrders();
       onClose();
     } catch (error) {
       console.error('Error submitting cancel request:', error);
-      showToast(error?.response?.data?.message || 'Failed to submit cancel request', 'error');
+      showToast(
+        error?.response?.data?.message || 'Failed to submit cancel request',
+        'error'
+      );
     } finally {
       setSubmittingOrderId(null);
     }
@@ -147,31 +166,37 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
                     {order.name} ({order.email})
                   </Typography>
                   <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
-                   <strong> Phone: </strong> {order.phone}
+                    <strong>Order ID:</strong> {order.orderId || 'N/A'}
                   </Typography>
                   <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
-                   <strong> Project Type: </strong> {order.projectType}
+                    <strong>Phone:</strong> {order.phone || 'N/A'}
                   </Typography>
                   <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
-                   <strong> Budget:  </strong> {order.projectBudget}
+                    <strong>Project Type:</strong> {order.projectType || 'N/A'}
                   </Typography>
                   <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
-                   <strong> Timeline: </strong> {new Date(order.timeline).toLocaleDateString()}
+                    <strong>Budget:</strong> {order.projectBudget || 'N/A'}
+                  </Typography>
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
+                    <strong>Timeline:</strong> {order.timeline ? new Date(order.timeline).toLocaleDateString() : 'N/A'}
                   </Typography>
                   <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem', wordBreak: 'break-word' }}>
-                   <strong> Description: </strong> {order.projectDescription}
+                    <strong>Description:</strong> {order.projectDescription || 'N/A'}
                   </Typography>
                   <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
-                   <strong> Payment Reference: </strong> {order.paymentReference}
+                    <strong>Payment Reference:</strong> {order.paymentReference || 'N/A'}
                   </Typography>
                   <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem' }}>
-                   <strong> Payment Method: </strong> {order.paymentMethod}
+                    <strong>Payment Method:</strong> {order.paymentMethod || 'N/A'}
                   </Typography>
                   <Typography sx={{ color: theme === 'light' ? 'text-gray-600' : 'text-gray-400', fontSize: '0.875rem', wordBreak: 'break-word' }}>
-                   <strong> Files: </strong> {order.filesList}
+                    <strong>Files:</strong> {order.filesList || 'None'}
                   </Typography>
                   <Typography sx={{ color: theme === 'light' ? 'text-gray-500' : 'text-gray-500', fontSize: '0.75rem', pt: 1 }}>
-                   <strong> Created:  </strong> {new Date(order.createdAt).toLocaleDateString()}
+                    <strong>Created:</strong> {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                  </Typography>
+                  <Typography sx={{ color: theme === 'light' ? 'text-gray-500' : 'text-gray-500', fontSize: '0.75rem', pt: 1 }}>
+                    <strong>Status:</strong> {order.status || 'N/A'}
                   </Typography>
                   {order.status === 'completed' ? (
                     <Typography
@@ -213,7 +238,18 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
                             sx={{
                               mb: 2,
                               '& .MuiInputBase-input': {
-                                color: 'white',
+                                color: theme === 'light' ? 'black' : 'white',
+                              },
+                              '& .MuiInputLabel-root': {
+                                color: theme === 'light' ? '#6b7280' : '#9ca3af',
+                              },
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: theme === 'light' ? '#d1d5db' : '#4b5563',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: theme === 'light' ? '#9ca3af' : '#6b7280',
+                                },
                               },
                             }}
                           />
@@ -222,8 +258,15 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
                             color="primary"
                             onClick={() => handleCancelRequest(order._id)}
                             disabled={submittingOrderId === order._id}
+                            sx={{
+                              textTransform: 'none',
+                              backgroundColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
+                              '&:hover': {
+                                backgroundColor: theme === 'light' ? '#2563eb' : '#3b82f6',
+                              },
+                            }}
                           >
-                            Submit
+                            {submittingOrderId === order._id ? 'Submitting...' : 'Submit'}
                           </Button>
                         </div>
                       )}
