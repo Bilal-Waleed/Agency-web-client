@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { showToast } from '../components/Toast';
 import Loader from '../components/Loader';
-import { io } from 'socket.io-client';
+import { socket } from '../socket';
 import { ArrowForward } from '@mui/icons-material';
 
 const Services = () => {
@@ -14,12 +14,6 @@ const Services = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const socketInstance = io('/', {
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-
     const fetchServices = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/services`);
@@ -37,25 +31,28 @@ const Services = () => {
 
     fetchServices();
 
-    socketInstance.on('connect', () => console.log('Connected to Socket.IO'));
-
-    socketInstance.on('serviceCreated', (newService) => {
+    const handleServiceCreated = (newService) => {
       setServices((prev) => [...prev, newService]);
-    });
+    };
 
-    socketInstance.on('serviceUpdated', (updatedService) => {
+    const handleServiceUpdated = (updatedService) => {
       setServices((prev) =>
         prev.map((s) => (s._id === updatedService._id ? updatedService : s))
       );
-    });
+    };
 
-    socketInstance.on('serviceDeleted', ({ id }) => {
+    const handleServiceDeleted = ({ id }) => {
       setServices((prev) => prev.filter((s) => s._id !== id));
-    });
+    };
+
+    socket.on('serviceCreated', handleServiceCreated);
+    socket.on('serviceUpdated', handleServiceUpdated);
+    socket.on('serviceDeleted', handleServiceDeleted);
 
     return () => {
-      socketInstance.disconnect();
-      console.log('Disconnected from Socket.IO');
+      socket.off('serviceCreated', handleServiceCreated);
+      socket.off('serviceUpdated', handleServiceUpdated);
+      socket.off('serviceDeleted', handleServiceDeleted);
     };
   }, []);
 

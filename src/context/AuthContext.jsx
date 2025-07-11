@@ -1,9 +1,9 @@
 import React, { createContext, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { io } from 'socket.io-client';
 import { showToast } from '../components/Toast';
 import { useNavigate } from 'react-router-dom';
+import { socket, initializeSocket, disconnectSocket } from '../socket';
 
 export const AuthContext = createContext();
 
@@ -46,7 +46,6 @@ const refreshToken = async () => {
     });
     const newToken = response.data.token;
     Cookies.set('token', newToken, { expires: 7 });
-    console.log('Current token in cookie:', Cookies.get('token'));
     console.log('Token refreshed successfully');
     return newToken;
   } catch (err) {
@@ -94,7 +93,6 @@ const handleUserChange = async (change, user, setUser, navigate) => {
               : 'Your admin access has been revoked.',
             isAdminNow ? 'success' : 'info'
           );
-          console.log('Showing toast:', isAdminNow ? 'Granted Admin' : 'Revoked Admin');
         } else {
           Cookies.remove('token');
           setUser(null);
@@ -105,8 +103,6 @@ const handleUserChange = async (change, user, setUser, navigate) => {
       } else {
         setUser(updatedUser);
       }
-
-      console.log('Updated user state:', updatedUser);
     } catch (err) {
       console.error('Error handling user update:', err.message, err.response?.data);
       if (err.response?.status === 401) {
@@ -128,60 +124,22 @@ const handleUserChange = async (change, user, setUser, navigate) => {
   }
 };
 
-const initializeSocket = (socketRef, getUser, setUser, navigate) => {
-  if (socketRef.current) return;
-
-  socketRef.current = io(import.meta.env.VITE_BACKEND_URL, {
-    reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 2000,
-  });
-
-  socketRef.current.on('connect', () => {
-    console.log('Socket connected:', socketRef.current.id);
-    const currentUser = getUser();
-    if (currentUser?._id) {
-      socketRef.current.emit('joinUserRoom', `user:${currentUser._id}`);
-    }
-  });
-
-  socketRef.current.on('connect_error', (err) => {
-    console.error('Socket connection error:', err);
-  });
-
-  socketRef.current.on('userChange', (change) =>
-    handleUserChange(change, getUser(), setUser, navigate)
-  );
-};
-
 const AuthContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const socketRef = useRef(null);
-  const userRef = useRef(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    userRef.current = user;
-  }, [user]);
 
   useEffect(() => {
     const token = Cookies.get('token');
     fetchUser(token, setUser, setIsLoading, navigate);
 
-    initializeSocket(socketRef, () => userRef.current, setUser, navigate);
+    initializeSocket(user, user?.isAdmin);
 
-    if (socketRef.current && user?._id) {
-      socketRef.current.emit('joinUserRoom', `user:${user._id}`);
-    }
+    socket.on('userChange', (change) => handleUserChange(change, user, setUser, navigate));
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.off('userChange');
-        socketRef.current.disconnect();
-        socketRef.current = null;
-        console.log('Socket disconnected and cleaned up');
-      }
+      socket.off('userChange');
+      disconnectSocket();
     };
   }, [user?._id]);
 

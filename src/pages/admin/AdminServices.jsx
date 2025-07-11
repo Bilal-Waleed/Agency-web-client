@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
-import { io } from 'socket.io-client';
-import Sidebar from '../../components/admin/Sidebar';
-import TopBar from '../../components/admin/TopBar';
 import { useNavigate } from 'react-router-dom';
 import { FaEdit, FaTrash, FaCheckSquare, FaSquare, FaPlus } from 'react-icons/fa';
 import axios from 'axios';
@@ -11,8 +8,9 @@ import Cookies from 'js-cookie';
 import EditServiceModal from '../../components/admin/EditServiceModal';
 import { showToast } from '../../components/Toast';
 import Loader from '../../components/Loader';
-
-const socket = io(import.meta.env.VITE_BACKEND_URL);
+import { socket } from '../../socket';
+import Sidebar from '../../components/admin/Sidebar';
+import TopBar from '../../components/admin/TopBar';
 
 const AdminServices = () => {
   const { theme } = useTheme();
@@ -28,9 +26,8 @@ const AdminServices = () => {
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate('/');
+      return;
     }
-
-    socket.emit('joinAdmin');
 
     const fetchServices = async () => {
       setLoading(true);
@@ -51,33 +48,36 @@ const AdminServices = () => {
 
     fetchServices();
 
-    socket.on('serviceCreated', (newService) => {
+    const handleServiceCreated = (newService) => {
       setServices((prev) => {
         if (prev.some((service) => service._id === newService._id)) {
           return prev;
         }
         return [...prev, newService];
       });
-    });
+    };
 
-    socket.on('serviceUpdated', (updatedService) => {
+    const handleServiceUpdated = (updatedService) => {
       setServices((prev) =>
         prev.map((service) =>
           service._id === updatedService._id ? updatedService : service
         )
       );
-    });
+    };
 
-    socket.on('serviceDeleted', ({ id }) => {
+    const handleServiceDeleted = ({ id }) => {
       setServices((prev) => prev.filter((service) => service._id !== id));
       setSelectedServices((prev) => prev.filter((serviceId) => serviceId !== id));
-    });
+    };
+
+    socket.on('serviceCreated', handleServiceCreated);
+    socket.on('serviceUpdated', handleServiceUpdated);
+    socket.on('serviceDeleted', handleServiceDeleted);
 
     return () => {
-      socket.emit('leaveAdmin');
-      socket.off('serviceCreated');
-      socket.off('serviceUpdated');
-      socket.off('serviceDeleted');
+      socket.off('serviceCreated', handleServiceCreated);
+      socket.off('serviceUpdated', handleServiceUpdated);
+      socket.off('serviceDeleted', handleServiceDeleted);
     };
   }, [user, navigate]);
 

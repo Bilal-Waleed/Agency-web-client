@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
-import { io } from 'socket.io-client';
-import Sidebar from '../../components/admin/Sidebar';
-import TopBar from '../../components/admin/TopBar';
 import { useNavigate } from 'react-router-dom';
 import { FaCheckSquare, FaSquare, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
@@ -11,12 +8,9 @@ import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
 import Loader from '../../components/Loader';
 import { Pagination, Stack, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-
-const socket = io(import.meta.env.VITE_BACKEND_URL, {
-  reconnection: true,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
-});
+import { socket } from '../../socket';
+import Sidebar from '../../components/admin/Sidebar';
+import TopBar from '../../components/admin/TopBar';
 
 const AdminUsers = ({ scrollRef }) => {
   const { theme } = useTheme();
@@ -49,8 +43,6 @@ const AdminUsers = ({ scrollRef }) => {
       navigate('/');
       return;
     }
-
-    socket.emit('joinAdmin');
 
     const fetchUsers = async () => {
       if (!isOnline) {
@@ -85,7 +77,7 @@ const AdminUsers = ({ scrollRef }) => {
 
     fetchUsers();
 
-    socket.on('userChange', (change) => {
+    const handleUserChange = (change) => {
       const { operationType, documentKey, fullDocument } = change;
 
       setUsers((prevUsers) => {
@@ -108,15 +100,15 @@ const AdminUsers = ({ scrollRef }) => {
       if (operationType === 'delete') {
         setSelectedUsers((prev) => prev.filter((id) => id !== documentKey._id));
       }
-    });
+    };
 
+    socket.on('userChange', handleUserChange);
     socket.on('connect_error', () => {
       showToast('Internet disconnected. Please check your connection.', 'error');
     });
 
     return () => {
-      socket.emit('leaveAdmin');
-      socket.off('userChange');
+      socket.off('userChange', handleUserChange);
       socket.off('connect_error');
     };
   }, [user, navigate, isOnline, page]);

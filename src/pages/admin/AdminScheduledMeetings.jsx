@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
-import { io } from 'socket.io-client';
 import Sidebar from '../../components/admin/Sidebar';
 import TopBar from '../../components/admin/TopBar';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +11,7 @@ import { Pagination, Stack, Button } from '@mui/material';
 import Loader from '../../components/Loader';
 import ScheduleMeetingModal from '../../components/ScheduleMeetingModal';
 import { FaCalendarAlt } from 'react-icons/fa';
+import { socket } from '../../socket'; 
 
 const AdminScheduledMeetings = ({ scrollRef }) => {
   const { theme } = useTheme();
@@ -22,8 +22,6 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const meetingsPerPage = 10;
-  const socketRef = useRef(null);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState(null);
 
@@ -33,73 +31,78 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
       return;
     }
 
-    if (!socketRef.current) {
-      socketRef.current = io(import.meta.env.VITE_BACKEND_URL);
-
-      socketRef.current.emit('joinAdmin');
-
-      socketRef.current.on('meetingChange', (meeting) => {
-
-    if (meeting.operationType === 'insert') {
-      showToast('New meeting scheduled by user', 'info');
-    }
-  });
-
-  socketRef.current.on('meetingUI', ({ action, data }) => {
-    if (action === 'insert' && page === 1) {
-      setMeetings((prev) => {
-        const updated = [data, ...prev.filter((m) => m._id !== data._id)];
-        return updated.slice(0, meetingsPerPage);
-      });
-    }
-
-    if (action === 'update') {
-      setMeetings((prev) =>
-        prev.map((m) => (m._id === data._id ? { ...m, ...data } : m))
-      );
-    }
-  });
-
-
-      socketRef.current.on('meetingDeleted', (meetingId) => {
-        setMeetings((prev) => prev.filter((m) => m._id !== meetingId));
-      });
-
-      socketRef.current.on('connect_error', (error) => {
-        console.error('Socket.IO connection error:', error.message);
-      });
-    }
-
     const fetchMeetings = async () => {
       setLoading(true);
       try {
-        const token = Cookies.get('token');
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/scheduled-meetings?page=${page}&limit=${meetingsPerPage}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setMeetings(response.data.data);
-        setTotalPages(response.data.totalPages);
-      } catch (error) {
-        const message = error.response?.data?.message || 'Error loading meetings. Please try again.';
-        showToast(message, 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
+      const token = Cookies.get('token');
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/scheduled-meetings?page=${page}&limit=${meetingsPerPage}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMeetings(response.data.data);
+      setTotalPages(response.data.totalPages);
+    } catch (error) {
+      const message =
+        error.response?.data?.message || 'Error loading meetings. Please try again.';
+      showToast(message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchMeetings();
+  fetchMeetings();
+}, [page]); 
 
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.emit('leaveAdmin');
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
-    };
-  }, [user, navigate, page]);
+
+useEffect(() => {
+  const handleMeetingChange = (meeting) => {
+  const inserted = meeting?.fullDocument;
+
+  if (meeting.operationType === 'insert' && inserted?._id) {
+    const meetingDateTime = new Date(`${inserted.date}T${inserted.time}`);
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    if (meetingDateTime < oneHourAgo) return;
+
+    showToast('New meeting scheduled by user', 'info');
+
+    if (page === 1) {
+      setMeetings((prev) => {
+        const exists = prev.some((m) => m._id === inserted._id);
+        if (exists) return prev;
+        const updated = [inserted, ...prev];
+        return updated.slice(0, meetingsPerPage);
+      });
+    }
+  }
+
+  else if (meeting.operationType === 'update') {
+    const updated = meeting.fullDocument || {};
+    const id = meeting.documentKey?._id;
+    if (!id) return;
+
+    setMeetings((prev) =>
+      prev.map((m) => (m._id === id ? { ...m, ...updated } : m))
+    );
+  }
+
+  else if (meeting.operationType === 'delete') {
+    setMeetings((prev) =>
+      prev.filter((m) => m._id !== meeting.documentKey._id)
+    );
+  }
+};
+
+
+  socket.on('meetingChange', handleMeetingChange);
+  socket.on('connect_error', () => {
+    showToast('Internet disconnected. Please check your connection.', 'error');
+  });
+
+  return () => {
+    socket.off('meetingChange', handleMeetingChange);
+    socket.off('connect_error');
+  };
+}, []); 
 
   const handleAcceptMeeting = async (meetingId) => {
     try {
@@ -111,9 +114,11 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
       );
       if (response.data.success) {
         showToast('Meeting accepted successfully', 'success');
-        setMeetings((prev) =>
-          prev.map((m) => (m._id === meetingId ? { ...m, status: 'accepted' } : m))
-        );
+        setMeetings((prevMeetings) =>
+        prevMeetings.map((meeting) =>
+          meeting._id === meetingId ? { ...meeting, status: 'accepted' } : meeting
+        )
+      );
       } else {
         showToast(response.data.message || 'Failed to accept meeting', 'error');
       }
@@ -127,11 +132,17 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
     setIsModalOpen(true);
   };
 
-  const onModalClose = (shouldReload) => {
-    setIsModalOpen(false);
-    setSelectedMeeting(null);
-    if (shouldReload) setPage(1);
-  };
+  const onModalClose = (shouldReload, updatedMeetingData = null) => {
+  setIsModalOpen(false);
+  setSelectedMeeting(null);
+
+  if (shouldReload && updatedMeetingData?._id) {
+    setMeetings((prev) =>
+      prev.map((m) => (m._id === updatedMeetingData._id ? updatedMeetingData : m))
+    );
+  }
+};
+
 
   const scrollToTop = () => {
     if (scrollRef?.current) {
@@ -145,14 +156,13 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
     scrollToTop();
   }, [page]);
 
-  const handlePageChange = ( value) => {
+  const handlePageChange = (event,value) => {
     setPage(value);
     scrollToTop();
   };
 
   const formatTime = (time) => {
     if (!time) return time;
-
     const [hours, minutes] = time.split(':').map(Number);
     const period = hours >= 12 ? 'PM' : 'AM';
     const adjustedHours = hours % 12 || 12;
@@ -169,7 +179,6 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
           Scheduled Meetings
           <div className="w-18 h-1 bg-[#646cff] mt-2"></div>
         </h1>
-
         <div className="space-y-4 flex-grow">
           {meetings.map((meeting) => (
             <div
@@ -251,7 +260,6 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
             </div>
           ))}
         </div>
-
         <div className="mt-6">
           <Stack spacing={2} alignItems="center">
             <Pagination
@@ -277,7 +285,6 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
           </Stack>
         </div>
       </div>
-
       <ScheduleMeetingModal
         isOpen={isModalOpen}
         onClose={onModalClose}
@@ -289,5 +296,6 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
     </div>
   );
 };
+
 
 export default AdminScheduledMeetings;

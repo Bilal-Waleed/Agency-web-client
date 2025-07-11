@@ -6,7 +6,7 @@ import axios from 'axios';
 import { Breadcrumbs, Link, Typography } from '@mui/material';
 import { showToast } from '../components/Toast';
 import Loader from '../components/Loader';
-import { io } from 'socket.io-client';
+import { socket } from '../socket';
 import ScheduleMeetingModal from '../components/ScheduleMeetingModal';
 import { FaCalendarAlt } from 'react-icons/fa';
 
@@ -20,12 +20,6 @@ const Service = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const socketInstance = io('/', {
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-
     const fetchServiceById = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`);
@@ -45,24 +39,25 @@ const Service = () => {
 
     fetchServiceById();
 
-    socketInstance.on('connect', () => console.log('Connected to Socket.IO'));
-
-    socketInstance.on('serviceUpdated', (updatedService) => {
+    const handleServiceUpdated = (updatedService) => {
       if (updatedService._id === id) {
         setSelectedService({ ...updatedService });
       }
-    });
+    };
 
-    socketInstance.on('serviceDeleted', ({ id: deletedId }) => {
+    const handleServiceDeleted = ({ id: deletedId }) => {
       if (deletedId === id) {
         showToast('This service has been deleted', 'error');
         navigate('/services');
       }
-    });
+    };
+
+    socket.on('serviceUpdated', handleServiceUpdated);
+    socket.on('serviceDeleted', handleServiceDeleted);
 
     return () => {
-      socketInstance.disconnect();
-      console.log('Disconnected from Socket.IO');
+      socket.off('serviceUpdated', handleServiceUpdated);
+      socket.off('serviceDeleted', handleServiceDeleted);
     };
   }, [id, navigate]);
 

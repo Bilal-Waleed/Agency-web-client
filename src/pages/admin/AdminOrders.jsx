@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
-import { io } from 'socket.io-client';
 import Sidebar from '../../components/admin/Sidebar';
 import TopBar from '../../components/admin/TopBar';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -14,6 +13,7 @@ import { FaDownload } from 'react-icons/fa';
 import CancelRequests from '../../components/admin/CancelRequests';
 import CancelOrderModal from '../../components/admin/CancelOrderModal';
 import CompleteOrderModal from '../../components/admin/CompleteOrderModal';
+import { socket } from '../../socket';
 
 const AdminOrders = ({ scrollRef }) => {
   const { theme } = useTheme();
@@ -30,7 +30,6 @@ const AdminOrders = ({ scrollRef }) => {
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const ordersPerPage = 10;
-  const socketRef = useRef(null);
 
   const fetchOrders = async (showLoader = true) => {
     if (showLoader) setLoading(true);
@@ -69,7 +68,6 @@ const AdminOrders = ({ scrollRef }) => {
           responseType: 'blob',
         }
       );
-
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -78,7 +76,6 @@ const AdminOrders = ({ scrollRef }) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-
       showToast('Order downloaded successfully', 'success');
     } catch (error) {
       console.error('Error downloading order:', error);
@@ -107,31 +104,24 @@ const AdminOrders = ({ scrollRef }) => {
   };
 
   const handleCompleteOrder = async (orderId, message, files) => {
-    const MAX_SINGLE_FILE_SIZE = 25 * 1024 * 1024; 
-    const MAX_TOTAL_SIZE = 25 * 1024 * 1024;      
-
+    const MAX_SINGLE_FILE_SIZE = 25 * 1024 * 1024;
+    const MAX_TOTAL_SIZE = 25 * 1024 * 1024;
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-
     for (let file of files) {
       if (file.size > MAX_SINGLE_FILE_SIZE) {
         showToast(`${file.name} is larger than 25MB`, 'error');
         return;
       }
     }
-
     if (totalSize > MAX_TOTAL_SIZE) {
       showToast('Total file size exceeds 25MB', 'error');
       return;
     }
-
     try {
       const token = Cookies.get('token');
       const formData = new FormData();
       formData.append('message', message || '');
-      files.forEach((file) => {
-        formData.append('files', file);
-      });
-
+      files.forEach((file) => formData.append('files', file));
       await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${orderId}/complete`,
         formData,
@@ -142,17 +132,11 @@ const AdminOrders = ({ scrollRef }) => {
           },
         }
       );
-
       showToast('Your response sent successfully', 'success');
       fetchOrders(false);
     } catch (error) {
       console.error('Error completing order:', error);
-
-      const message =
-        error?.response?.data?.message ||
-        'Failed to complete order. Please try again.';
-
-      showToast(message, 'error');
+      showToast(error?.response?.data?.message || 'Failed to complete order. Please try again.', 'error');
     }
   };
 
@@ -162,31 +146,24 @@ const AdminOrders = ({ scrollRef }) => {
       return;
     }
 
-    if (!socketRef.current) {
-      socketRef.current = io(import.meta.env.VITE_BACKEND_URL, {
-        reconnection: false,
-      });
-
-      socketRef.current.emit('joinAdmin');
-
-      socketRef.current.on('orderChange', (change) => {
-        if (['insert', 'delete', 'update'].includes(change.operationType)) {
-          fetchOrders(false);
-        }
-      });
-    }
+    const handleOrderChange = (change) => {
+      if (['insert', 'delete', 'update'].includes(change.operationType)) {
+        fetchOrders(false);
+      }
+    };
 
     if (activeTab === 'orders') {
       fetchOrders();
     }
 
+    socket.on('orderChange', handleOrderChange);
+    socket.on('connect_error', () => {
+      showToast('Internet disconnected. Please check your connection.', 'error');
+    });
+
     return () => {
-      if (socketRef.current) {
-        socketRef.current.emit('leaveAdmin');
-        socketRef.current.off('orderChange');
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
+      socket.off('orderChange', handleOrderChange);
+      socket.off('connect_error');
     };
   }, [user, navigate, page, activeTab]);
 
@@ -239,14 +216,12 @@ const AdminOrders = ({ scrollRef }) => {
               <div className="w-16 h-1 bg-[#646cff] mt-1 rounded"></div>
             )}
           </div>
-
           <Typography
             variant="h4"
             className={`${theme === 'light' ? 'text-black' : 'text-white'} font-bold hidden sm:block`}
           >
             /
           </Typography>
-
           <div onClick={() => setActiveTab('cancel-requests')} className="cursor-pointer">
             <h1
               className={`text-2xl sm:text-3xl font-bold ${
@@ -274,9 +249,7 @@ const AdminOrders = ({ scrollRef }) => {
                   <div
                     key={order._id}
                     className={`relative flex flex-wrap sm:flex-nowrap items-start gap-4 p-6 rounded-lg transform transition-transform duration-200 hover:-translate-y-1 ${
-                      theme === 'light'
-                        ? 'bg-white shadow-lg border border-gray-200'
-                        : 'bg-gray-800 shadow-xl border border-gray-700'
+                      theme === 'light' ? 'bg-white shadow-lg border border-gray-200' : 'bg-gray-800 shadow-xl border border-gray-700'
                     }`}
                   >
                     <button
@@ -285,115 +258,58 @@ const AdminOrders = ({ scrollRef }) => {
                       className={`absolute top-4 right-4 p-2 rounded-full ${
                         downloadingId === order._id
                           ? 'text-gray-400 bg-gray-200 cursor-not-allowed'
-                          : theme === 'light'
-                          ? 'text-blue-500 hover:bg-blue-100'
-                          : 'text-blue-400 hover:bg-gray-700'
+                          : theme === 'light' ? 'text-blue-500 hover:bg-blue-100' : 'text-blue-400 hover:bg-gray-700'
                       }`}
                       title="Download Order"
                     >
                       <FaDownload className="text-xl" />
                     </button>
-
                     <img
                       src={getAvatarUrl(order)}
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          order.name
-                        )}`;
+                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(order.name)}`;
                       }}
                       alt={order.name}
                       className="w-12 h-12 rounded-full"
                     />
                     <div className="flex flex-col min-w-0 w-full">
-                      <p
-                        className={`font-semibold text-lg break-words ${
-                          theme === 'light' ? 'text-gray-900' : 'text-gray-100'
-                        }`}
-                      >
-                        {order.name}{' '}
-                        <span className="text-sm font-normal">({order.email})</span>
+                      <p className={`font-semibold text-lg break-words ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>
+                        {order.name} <span className="text-sm font-normal">({order.email})</span>
                       </p>
-                      <p
-                        className={`text-sm ${
-                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                        }`}
-                      >
+                      <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
                         <strong>Order ID:</strong> {order.orderId}
                       </p>
-                      <p
-                        className={`text-sm ${
-                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                        }`}
-                      >
+                      <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
                         <strong>Phone:</strong> {order.phone}
                       </p>
-                      <p
-                        className={`text-sm ${
-                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                        }`}
-                      >
+                      <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
                         <strong>Project Type:</strong> {order.projectType}
                       </p>
-                      <p
-                        className={`text-sm ${
-                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                        }`}
-                      >
+                      <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
                         <strong>Budget:</strong> {order.projectBudget}
                       </p>
-                      <p
-                        className={`text-sm ${
-                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                        }`}
-                      >
-                        <strong>Timeline:</strong>{' '}
-                        {new Date(order.timeline).toLocaleDateString()}
+                      <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                        <strong>Timeline:</strong> {new Date(order.timeline).toLocaleDateString()}
                       </p>
-                      <p
-                        className={`text-sm break-words ${
-                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                        }`}
-                      >
+                      <p className={`text-sm break-words ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
                         <strong>Description:</strong> {order.projectDescription}
                       </p>
-                      <p
-                        className={`text-sm ${
-                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                        }`}
-                      >
+                      <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
                         <strong>Payment Reference:</strong> {order.paymentReference}
                       </p>
-                      <p
-                        className={`text-sm ${
-                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                        }`}
-                      >
+                      <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
                         <strong>Payment Method:</strong> {order.paymentMethod}
                       </p>
-                      <p
-                        className={`text-sm break-words whitespace-normal ${
-                          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                        }`}
-                      >
+                      <p className={`text-sm break-words whitespace-normal ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
                         <strong>Files:</strong> {order.filesList}
                       </p>
                       <div className="flex flex-col gap-2 mt-2 mb-2">
-                        <p
-                          className={`text-xs ${
-                            theme === 'light' ? 'text-gray-500' : 'text-gray-500'
-                          }`}
-                        >
-                          <strong>Created:</strong>{' '}
-                          {new Date(order.createdAt).toLocaleDateString()}
+                        <p className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
+                          <strong>Created:</strong> {new Date(order.createdAt).toLocaleDateString()}
                         </p>
                         {order.status === 'completed' ? (
-                          <Typography
-                            sx={{
-                              color: theme === 'light' ? '#10B981' : '#34D399',
-                              fontWeight: 'medium',
-                            }}
-                          >
+                          <Typography sx={{ color: theme === 'light' ? '#10B981' : '#34D399', fontWeight: 'medium' }}>
                             Order Completed
                           </Typography>
                         ) : (
@@ -405,11 +321,9 @@ const AdminOrders = ({ scrollRef }) => {
                               sx={{
                                 textTransform: 'none',
                                 fontWeight: 'medium',
-                                backgroundColor:
-                                  theme === 'light' ? '#dc2626' : '#ef4444',
+                                backgroundColor: theme === 'light' ? '#dc2626' : '#ef4444',
                                 '&:hover': {
-                                  backgroundColor:
-                                    theme === 'light' ? '#dc2626' : '#ef4444',
+                                  backgroundColor: theme === 'light' ? '#dc2626' : '#ef4444',
                                   transform: 'scale(1.05)',
                                   transition: 'all 0.2s ease-in-out',
                                 },
@@ -426,9 +340,9 @@ const AdminOrders = ({ scrollRef }) => {
                                 textTransform: 'none',
                                 fontWeight: 'medium',
                                 color: '#10B981',
-                                borderColor: '#10B981', 
+                                borderColor: '#10B981',
                                 '&:hover': {
-                                  backgroundColor: theme === 'light' ? '#d1fae5' : '#064e3b', 
+                                  backgroundColor: theme === 'light' ? '#d1fae5' : '#064e3b',
                                   borderColor: '#10B981',
                                   color: theme === 'light' ? '#059669' : '#6ee7b7',
                                   transform: 'scale(1.05)',
@@ -445,7 +359,6 @@ const AdminOrders = ({ scrollRef }) => {
                     </div>
                   </div>
                 ))}
-
                 <div className="mt-6">
                   <Stack spacing={2} alignItems="center">
                     <Pagination
@@ -459,12 +372,10 @@ const AdminOrders = ({ scrollRef }) => {
                           color: theme === 'light' ? '#000' : '#fff',
                           backgroundColor: theme === 'light' ? '#fff' : '#374151',
                           '&:hover': {
-                            backgroundColor:
-                              theme === 'light' ? '#e5e7eb' : '#4b5563',
+                            backgroundColor: theme === 'light' ? '#e5e7eb' : '#4b5563',
                           },
                           '&.Mui-selected': {
-                            backgroundColor:
-                              theme === 'light' ? '#3b82f6' : '#60a5fa',
+                            backgroundColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
                             color: '#fff',
                           },
                         },
