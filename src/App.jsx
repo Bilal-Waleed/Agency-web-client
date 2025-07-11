@@ -1,4 +1,4 @@
-import React, { useContext , useRef} from 'react';
+import React, { useContext, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthContext } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
@@ -14,6 +14,7 @@ import Services from './pages/Services';
 import Service from './pages/Service';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import OTPVerification from './pages/OTPVerification';
 import Order from './pages/Order';
 import ForgotPassword from './pages/ForgotPassword';
 import NotFound from './pages/NotFound';
@@ -69,6 +70,7 @@ const App = () => {
             <Route element={<RestrictedRoute />}>
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/verify-otp" element={<OTPVerification />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
             </Route>

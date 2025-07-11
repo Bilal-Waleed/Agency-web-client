@@ -1,11 +1,11 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import * as Yup from "yup";
 import { useTheme } from "../context/ThemeContext";
 import { Google } from "@mui/icons-material";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import Cookies from "js-cookie";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { showToast } from "../components/Toast";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
@@ -25,6 +25,7 @@ const Login = () => {
   const { theme } = useTheme();
   const { setUser } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -32,6 +33,26 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const checkVerificationStatus = async () => {
+      const email = new URLSearchParams(location.search).get("email");
+      if (email) {
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/user`, {
+            headers: { Authorization: `Bearer ${Cookies.get("token")}` },
+          });
+          if (!response.data.user.isVerified) {
+            showToast("Please verify your OTP before logging in.", "error");
+            navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
+          }
+        } catch (error) {
+          console.error("Error checking verification status:", error);
+        }
+      }
+    };
+    checkVerificationStatus();
+  }, [location, navigate]);
 
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
@@ -69,6 +90,9 @@ const Login = () => {
         const msg = error.response?.data?.error || "Login failed";
         setErrors({ api: msg });
         showToast(msg, "error");
+        if (msg.includes("Please verify your OTP")) {
+          setTimeout(() => navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`), 1500);
+        }
       }
     }
   };
@@ -91,8 +115,10 @@ const Login = () => {
       const msg = error.response?.data?.error || "Google login failed";
       setErrors({ api: msg });
       showToast(msg, "error");
-      if (msg.includes("No data account")) {
+      if (msg.includes("No user account")) {
         setTimeout(() => navigate("/register"), 1500);
+      } else if (msg.includes("Please verify your OTP")) {
+        setTimeout(() => navigate(`/verify-otp?email=${encodeURIComponent(formData.email || error.response?.data?.email)}`), 1500);
       }
     }
   };
@@ -179,7 +205,6 @@ const Login = () => {
                   <p className="text-red-500 text-sm mt-1">{errors.password}</p>
                 )}
               </div>
-              {errors.api && <p className="text-red-500 text-sm text-center mt-2">{errors.api}</p>}
               <button
                 type="submit"
                 disabled={loading}

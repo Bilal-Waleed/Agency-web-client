@@ -65,8 +65,8 @@ const Register = () => {
         isAdmin: false,
       });
       setLoading(false);
-      showToast("Registration successful! Redirecting to login...", "success");
-      setTimeout(() => navigate("/login"), 1500);
+      showToast("Registration successful! Please verify your OTP.", "success");
+      setTimeout(() => navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`), 1500);
     } catch (error) {
       setLoading(false);
       if (error.name === "ValidationError") {
@@ -91,7 +91,7 @@ const Register = () => {
       const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/google-register`, { credential });
       setLoading(false);
       showToast(res.data.message, "success");
-      setTimeout(() => navigate("/login"), 1500);
+      setTimeout(() => navigate(`/verify-otp?email=${encodeURIComponent(res.data.user.email)}`), 1500);
     } catch (error) {
       setLoading(false);
       const msg = error.response?.data?.error || "Google registration failed";
@@ -210,9 +210,8 @@ const Register = () => {
                   <p className="text-red-500 text-sm mt-1">{errors.password}</p>
                 )}
               </div>
-              {errors.api && <p className="text-red-500 text-sm text-center mt-2">{errors.api}</p>}
               <button
-                roll="submit"
+                role="submit"
                 disabled={loading}
                 className={`w-full p-2 mt-3 rounded-md text-white ${
                   loading ? "bg-gray-500 cursor-not-allowed" : "bg-[#646cff] hover:bg-[#535bf2]"
