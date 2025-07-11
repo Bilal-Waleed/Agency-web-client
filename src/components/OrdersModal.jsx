@@ -10,6 +10,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
   const [cancelReason, setCancelReason] = useState({});
   const [showCancelInput, setShowCancelInput] = useState({});
   const [submittingOrderId, setSubmittingOrderId] = useState(null);
+  const [cancelRequests, setCancelRequests] = useState([]); 
 
   const fetchUserOrders = async () => {
     try {
@@ -34,9 +35,30 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
     }
   };
 
+  const fetchCancelRequests = async () => {
+    try {
+      const token = Cookies.get('token');
+      if (!token) return;
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/order/user-cancel-requests`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setCancelRequests(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching cancel requests:', error);
+      showToast(
+        error.response?.data?.message || 'Failed to load cancel requests',
+        'error'
+      );
+    }
+  };
+
   useEffect(() => {
     if (isOpen && user) {
       fetchUserOrders();
+      fetchCancelRequests();
     }
   }, [isOpen, user]);
 
@@ -64,7 +86,6 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
       return;
     }
 
-
     setSubmittingOrderId(orderId);
     try {
       const token = Cookies.get('token');
@@ -79,7 +100,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
       );
       toggleCancelInput(orderId);
       fetchUserOrders();
-      onClose();
+      fetchCancelRequests(); 
     } catch (error) {
       console.error('Error submitting cancel request:', error);
       showToast(
@@ -89,6 +110,10 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
     } finally {
       setSubmittingOrderId(null);
     }
+  };
+
+  const hasPendingCancelRequest = (orderId) => {
+    return cancelRequests.some((request) => request.order._id === orderId);
   };
 
   return (
@@ -216,10 +241,14 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
                         color="error"
                         size="small"
                         onClick={() => toggleCancelInput(order._id)}
-                        disabled={submittingOrderId === order._id}
+                        disabled={submittingOrderId === order._id || hasPendingCancelRequest(order._id)}
                         sx={{ mt: 2, mb: 1 }}
                       >
-                        {showCancelInput[order._id] ? 'Hide Cancel Request' : 'Cancel Order Request'}
+                        {showCancelInput[order._id]
+                          ? 'Hide Cancel Request'
+                          : hasPendingCancelRequest(order._id)
+                          ? 'Cancellation Request Pending'
+                          : 'Cancel Order Request'}
                       </Button>
                       {showCancelInput[order._id] && (
                         <div className="mt-2">
