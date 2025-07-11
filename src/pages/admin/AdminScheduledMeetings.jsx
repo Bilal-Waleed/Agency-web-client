@@ -92,18 +92,40 @@ useEffect(() => {
   }
 };
 
+ const handleMeetingUIUpdate = (payload) => {
+    if (payload.action === 'update' && payload.data?._id) {
+      setMeetings((prev) =>
+        prev.map((m) =>
+          m._id === payload.data._id ? { ...m, ...payload.data } : m
+        )
+      );
+    }
+
+    if (payload.action === 'insert' && payload.data?._id) {
+      if (page === 1) {
+        setMeetings((prev) => {
+          const exists = prev.some((m) => m._id === payload.data._id);
+          if (exists) return prev;
+          const updated = [payload.data, ...prev];
+          return updated.slice(0, meetingsPerPage);
+        });
+      }
+    }
+  };
 
   socket.on('meetingChange', handleMeetingChange);
+  socket.on('meetingUI', handleMeetingUIUpdate);
+
   socket.on('connect_error', () => {
     showToast('Internet disconnected. Please check your connection.', 'error');
   });
 
   return () => {
     socket.off('meetingChange', handleMeetingChange);
+    socket.off('meetingUI', handleMeetingUIUpdate); 
     socket.off('connect_error');
   };
-}, []); 
-
+}, []);
   const handleAcceptMeeting = async (meetingId) => {
     try {
       const token = Cookies.get('token');
