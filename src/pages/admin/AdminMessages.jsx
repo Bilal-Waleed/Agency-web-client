@@ -7,8 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
-import { Pagination, Stack } from '@mui/material';
-import Loader from '../../components/Loader';
+import { Pagination, Skeleton, Stack } from '@mui/material';
 import { socket } from '../../socket'; 
 
 const AdminMessages = ({ scrollRef }) => {
@@ -52,7 +51,6 @@ const AdminMessages = ({ scrollRef }) => {
     fetchContacts();
 
     const handleContactChange = (contact) => {
-  // If your backend sends the full contact object directly (not a change stream format)
   if (contact && contact._id && page === 1) {
     setContacts((prev) => {
       const updated = [contact, ...prev.filter((c) => c?._id !== contact._id)];
@@ -60,7 +58,6 @@ const AdminMessages = ({ scrollRef }) => {
     });
   }
 
-  // If backend is using change streams (optional fallback)
   else if (contact?.operationType === 'insert' && contact?.fullDocument && page === 1) {
     const newContact = contact.fullDocument;
 
@@ -92,6 +89,47 @@ const AdminMessages = ({ scrollRef }) => {
     }
   }, [page, scrollRef]);
 
+  const MessageCardSkeleton = () => (
+  <div
+    className={`flex flex-wrap sm:flex-nowrap items-start gap-4 p-4 rounded-lg ${
+      theme === 'light' ? 'bg-white shadow-sm' : 'bg-gray-800 shadow-md'
+    }`}
+  >
+    <Skeleton
+      variant="circular"
+      width={40}
+      height={40}
+      sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
+    />
+    <div className="flex flex-col gap-2 w-full">
+      <Skeleton
+        variant="text"
+        width="40%"
+        height={24}
+        sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
+      />
+      <Skeleton
+        variant="text"
+        width="60%"
+        height={18}
+        sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.800' }}
+      />
+      <Skeleton
+        variant="text"
+        width="90%"
+        height={16}
+        sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.800' }}
+      />
+      <Skeleton
+        variant="text"
+        width="30%"
+        height={12}
+        sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.800' }}
+      />
+    </div>
+  </div>
+);
+
   const handlePageChange = (event, value) => {
     console.log('Changing to page:', value); 
     setPage(value);
@@ -103,7 +141,6 @@ const AdminMessages = ({ scrollRef }) => {
 
   return (
     <div className={`min-h-screen flex flex-col ${theme === 'light' ? 'bg-gray-100' : 'bg-gray-900'}`}>
-      {loading && <Loader />}
       <Sidebar />
       <div className="ml-16 mt-2 p-6 flex flex-col flex-grow">
         <TopBar />
@@ -112,7 +149,13 @@ const AdminMessages = ({ scrollRef }) => {
           <div className="w-18 h-1 bg-[#646cff] mt-2"></div>
         </h1>
         <div className="space-y-4 flex-grow">
-          {contacts.length === 0 && !loading ? (
+         {loading ? (
+            <>
+              {[...Array(5)].map((_, id) => (
+                <MessageCardSkeleton key={id}/>
+              ))}
+            </>
+          ) : contacts.length === 0 ? (
             <div className="text-center text-gray-500 mt-4 text-lg">
               No messages found.
             </div>

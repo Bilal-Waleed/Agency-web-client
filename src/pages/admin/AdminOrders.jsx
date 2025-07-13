@@ -8,7 +8,6 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
 import { Pagination, Stack, Button, Typography, Skeleton } from '@mui/material';
-import Loader from '../../components/Loader';
 import { FaDownload } from 'react-icons/fa';
 import CancelRequests from '../../components/admin/CancelRequests';
 import CancelOrderModal from '../../components/admin/CancelOrderModal';
@@ -198,11 +197,11 @@ const AdminOrders = ({ scrollRef }) => {
         sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
       />
       <div className="flex flex-col flex-grow gap-2">
-        <Skeleton variant="text" width="40%" height={28} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
-        <Skeleton variant="text" width="60%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
-        <Skeleton variant="text" width="55%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
-        <Skeleton variant="text" width="50%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
-        <Skeleton variant="text" width="70%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="40%" height={30} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+        <Skeleton variant="text" width="60%" height={28} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="55%" height={26} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="50%" height={26} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="70%" height={26} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
         <Skeleton variant="rectangular" width={120} height={36} sx={{ borderRadius: 1, bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
       </div>
     </div>

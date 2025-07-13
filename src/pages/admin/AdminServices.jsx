@@ -7,7 +7,6 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import EditServiceModal from '../../components/admin/EditServiceModal';
 import { showToast } from '../../components/Toast';
-import Loader from '../../components/Loader';
 import { socket } from '../../socket';
 import Sidebar from '../../components/admin/Sidebar';
 import TopBar from '../../components/admin/TopBar';
@@ -181,10 +180,10 @@ const AdminServices = () => {
       }`}
     >
       <div className="flex items-center gap-3 flex-1">
-        <Skeleton variant="rectangular" width={32} height={32} sx={{ borderRadius: '4px', bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+        <Skeleton variant="rectangular" width={36} height={32} sx={{ borderRadius: '4px', bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
         <div className="flex flex-col flex-1">
-          <Skeleton variant="text" width="60%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
-          <Skeleton variant="text" width="80%" height={16} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+          <Skeleton variant="text" width="60%" height={28} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+          <Skeleton variant="text" width="80%" height={18} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
         </div>
       </div>
       <Skeleton variant="circular" width={24} height={24} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />

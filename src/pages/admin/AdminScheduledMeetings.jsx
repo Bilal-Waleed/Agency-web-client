@@ -8,7 +8,6 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
 import { Pagination, Stack, Button, Skeleton } from '@mui/material';
-import Loader from '../../components/Loader';
 import ScheduleMeetingModal from '../../components/ScheduleMeetingModal';
 import { FaCalendarAlt } from 'react-icons/fa';
 import { socket } from '../../socket'; 
@@ -197,11 +196,11 @@ useEffect(() => {
         sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
       />
       <div className="flex flex-col gap-2 flex-grow">
-        <Skeleton variant="text" width="40%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
-        <Skeleton variant="text" width="60%" height={16} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
-        <Skeleton variant="text" width="50%" height={16} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
-        <Skeleton variant="text" width="50%" height={16} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
-        <Skeleton variant="text" width="40%" height={16} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="40%" height={28} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+        <Skeleton variant="text" width="60%" height={18} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="50%" height={18} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="50%" height={18} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="40%" height={18} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
         <Skeleton variant="rectangular" width={120} height={36} sx={{ borderRadius: 1, bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
       </div>
     </div>
