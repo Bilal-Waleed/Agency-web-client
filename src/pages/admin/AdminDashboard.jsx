@@ -33,27 +33,26 @@ const AdminDashboard = () => {
   const endRef = useRef();
 
   const chartTextColor = theme === 'light' ? '#1f2937' : '#ffffff';
-  const textColor = theme === 'light' ? '#000' : '#fff';
 
   const chartCommonStyles = {
     backgroundColor: theme === 'light' ? '#fff' : '#1f2937',
     borderRadius: 10,
     padding: '1rem',
-    animationDuration: '5000ms',
     '& .MuiChartsAxis-tickLabel': {
-      fill: textColor,
+      fill: chartTextColor,
       fontSize: window.innerWidth < 640 ? 10 : 12,
     },
     '& .MuiChartsLegend-label': {
-      fill: textColor,
+      fill: chartTextColor,
       fontSize: window.innerWidth < 640 ? 10 : 12,
     },
     '& .MuiChartsTooltip-tooltip': {
-      color: textColor,
+      color: chartTextColor,
       backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
       fontSize: window.innerWidth < 640 ? 10 : 12,
     },
   };
+
 
   const fetchData = async (start, end, showLoader = true) => {
   if (showLoader) setLoading(true);
@@ -348,13 +347,12 @@ const PieChartSkeleton = ({ size = 250 }) => {
               ) : safeData.serviceOrders.length > 0 ? (
                 <PieChart
                   series={[{
-                    data: safeData.serviceOrders.map((item, idx) => ({
-                      id: idx,
+                    data: safeData.serviceOrders.map((item, id) => ({
+                      id: id,
                       value: item.count,
                       label: item.name.length > 12 ? item.name.slice(0, 12) + '…' : item.name,
                     })),
                     labelFontSize: window.innerWidth < 640 ? 6 : window.innerWidth < 1024 ? 10 : 12,
-                    labelColor: chartTextColor,
                   }]}
                   sx={chartCommonStyles}
                   slotProps={{ container: { className: 'w-full h-full' } }}
