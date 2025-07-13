@@ -5,8 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
-import { Pagination, Stack, Button } from '@mui/material';
-import Loader from '../../components/Loader';
+import { Pagination, Stack, Button, Skeleton } from '@mui/material';
 import { socket } from '../../socket'; 
 
 const CancelRequests = ({ scrollRef }) => {
@@ -130,10 +129,61 @@ const CancelRequests = ({ scrollRef }) => {
     return item?.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.userName)}`;
   };
 
+  const CancelRequestSkeleton = () => (
+  <div
+    className={`flex flex-wrap sm:flex-nowrap items-start gap-4 p-6 rounded-lg ${
+      theme === 'light' ? 'bg-white shadow-sm' : 'bg-gray-800 shadow-md'
+    }`}
+  >
+    <Skeleton
+      variant="circular"
+      width={48}
+      height={48}
+      sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
+    />
+    <div className="flex flex-col gap-2 w-full">
+      <Skeleton
+        variant="text"
+        width="60%"
+        height={24}
+        sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
+      />
+      <Skeleton
+        variant="text"
+        width="40%"
+        height={18}
+        sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.800' }}
+      />
+      <Skeleton
+        variant="text"
+        width="80%"
+        height={16}
+        sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.800' }}
+      />
+      <Skeleton
+        variant="text"
+        width="90%"
+        height={16}
+        sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.800' }}
+      />
+      <Skeleton
+        variant="rectangular"
+        width="30%"
+        height={30}
+        sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700', borderRadius: 1 }}
+      />
+    </div>
+  </div>
+);
+
   return (
     <div className="space-y-4 flex-grow">
       {loading ? (
-        <Loader />
+      <>
+        {[...Array(5)].map((_, i) => (
+          <CancelRequestSkeleton key={i} theme={theme} />
+        ))}
+      </>
       ) : cancelRequests.length === 0 ? (
         <div className="text-center text-gray-500 mt-4 text-lg">
           No cancel requests found.
