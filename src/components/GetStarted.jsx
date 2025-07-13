@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
 
 const GetStarted = () => {
   const { theme } = useTheme();
