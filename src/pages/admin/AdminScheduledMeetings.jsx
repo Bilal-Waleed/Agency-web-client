@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
-import { Pagination, Stack, Button } from '@mui/material';
+import { Pagination, Stack, Button, Skeleton } from '@mui/material';
 import Loader from '../../components/Loader';
 import ScheduleMeetingModal from '../../components/ScheduleMeetingModal';
 import { FaCalendarAlt } from 'react-icons/fa';
@@ -183,6 +183,32 @@ useEffect(() => {
     scrollToTop();
   };
 
+  const MeetingCardSkeleton = () => {
+  return (
+    <div
+      className={`flex flex-wrap sm:flex-nowrap items-start gap-4 p-4 rounded-lg ${
+        theme === 'light' ? 'bg-white shadow-sm' : 'bg-gray-800 shadow-md'
+      }`}
+    >
+      <Skeleton
+        variant="circular"
+        width={40}
+        height={40}
+        sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
+      />
+      <div className="flex flex-col gap-2 flex-grow">
+        <Skeleton variant="text" width="40%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+        <Skeleton variant="text" width="60%" height={16} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="50%" height={16} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="50%" height={16} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="40%" height={16} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="rectangular" width={120} height={36} sx={{ borderRadius: 1, bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+      </div>
+    </div>
+  );
+};
+
+
   const formatTime = (time) => {
     if (!time) return time;
     const [hours, minutes] = time.split(':').map(Number);
@@ -193,7 +219,6 @@ useEffect(() => {
 
   return (
     <div className={`min-h-screen flex flex-col ${theme === 'light' ? 'bg-gray-100' : 'bg-gray-900'}`}>
-      {loading && <Loader />}
       <Sidebar />
       <div className="ml-16 mt-2 p-6 flex flex-col flex-grow">
         <TopBar />
@@ -202,7 +227,9 @@ useEffect(() => {
           <div className="w-18 h-1 bg-[#646cff] mt-2"></div>
         </h1>
         <div className="space-y-4 flex-grow">
-          {meetings.map((meeting) => (
+          {loading
+            ? [...Array(6)].map((_, id) => (<MeetingCardSkeleton key={id}/>))
+            : meetings.map((meeting) => (
             <div
               key={meeting._id}
               className={`flex flex-wrap sm:flex-nowrap items-start gap-4 p-4 rounded-lg transform transition-transform duration-200 hover:-translate-x-1 ${

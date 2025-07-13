@@ -11,6 +11,7 @@ import Loader from '../../components/Loader';
 import { socket } from '../../socket';
 import Sidebar from '../../components/admin/Sidebar';
 import TopBar from '../../components/admin/TopBar';
+import { Skeleton } from '@mui/material';
 
 const AdminServices = () => {
   const { theme } = useTheme();
@@ -172,6 +173,26 @@ const AdminServices = () => {
     }
   };
 
+  const ServiceCardSkeleton = () => {
+  return (
+    <div
+      className={`p-4 rounded-lg shadow-md flex justify-between items-center ${
+        theme === 'light' ? 'bg-white' : 'bg-gray-800'
+      }`}
+    >
+      <div className="flex items-center gap-3 flex-1">
+        <Skeleton variant="rectangular" width={32} height={32} sx={{ borderRadius: '4px', bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+        <div className="flex flex-col flex-1">
+          <Skeleton variant="text" width="60%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+          <Skeleton variant="text" width="80%" height={16} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        </div>
+      </div>
+      <Skeleton variant="circular" width={24} height={24} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+    </div>
+  );
+};
+
+
   const handleDoubleClick = (service) => {
     toggleSelection(service._id);
   };
@@ -182,7 +203,6 @@ const AdminServices = () => {
         theme === 'light' ? 'bg-gray-100 text-gray-900' : 'bg-gray-900 text-gray-100'
       }`}
     >
-      {loading && <Loader />}
       <Sidebar />
       <div className="ml-16 mt-2 p-6">
         <TopBar />
@@ -226,7 +246,9 @@ const AdminServices = () => {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {services.map((service) => (
+          {loading
+            ? [...Array(6)].map((_, id) => <ServiceCardSkeleton key={id} />)
+            : services.map((service) => (
             <div
               key={service._id}
               className={`p-4 rounded-lg ${
