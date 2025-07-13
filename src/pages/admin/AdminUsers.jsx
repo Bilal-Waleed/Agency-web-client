@@ -6,11 +6,11 @@ import { FaCheckSquare, FaSquare, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
-import Loader from '../../components/Loader';
 import { Pagination, Stack, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { socket } from '../../socket';
 import Sidebar from '../../components/admin/Sidebar';
 import TopBar from '../../components/admin/TopBar';
+import { Skeleton } from '@mui/material';
 
 const AdminUsers = ({ scrollRef }) => {
   const { theme } = useTheme();
@@ -227,13 +227,49 @@ const AdminUsers = ({ scrollRef }) => {
     handleCloseDialog();
   };
 
+  const UserCardSkeleton = () => (
+  <div
+    className={`flex items-center p-4 gap-2 rounded-lg ${
+      theme === 'light' ? 'bg-white' : 'bg-gray-800'
+    }`}
+  >
+    <Skeleton
+      variant="circular"
+      width={40}
+      height={40}
+      sx={{
+        bgcolor: theme === 'light' ? 'grey.300' : 'grey.700',
+      }}
+    />
+    <div className="flex-1 space-y-2">
+      <Skeleton
+        variant="text"
+        height={24}
+        width="50%"
+        sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
+      />
+      <Skeleton
+        variant="text"
+        height={20}
+        width="50%"
+        sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }}
+      />
+      <Skeleton
+        variant="text"
+        height={20}
+        width="35%"
+        sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }}
+      />
+    </div>
+  </div>
+);
+
   const getAvatarUrl = (u) => {
     return u?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.name)}`;
   };
 
   return (
     <div className={`min-h-screen ${theme === 'light' ? 'bg-gray-100' : 'bg-gray-900'}`}>
-      {loading && <Loader />}
       <Sidebar />
       <div className="ml-16 mt-2 p-6 flex flex-col min-h-[calc(100vh-4rem)]">
         <TopBar />
@@ -266,7 +302,9 @@ const AdminUsers = ({ scrollRef }) => {
         </div>
 
         <div className="space-y-4 flex-grow">
-          {users.map((u) => (
+          {loading
+            ? [...Array(10)].map((_, i) => <UserCardSkeleton key={i} />)
+            : users.map((u) => (
             <div
               key={u._id}
               className={`flex items-center p-4 gap-2 rounded-lg transition-all duration-200 hover:shadow-md ${
