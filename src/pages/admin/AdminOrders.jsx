@@ -7,7 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
-import { Pagination, Stack, Button, Typography } from '@mui/material';
+import { Pagination, Stack, Button, Typography, Skeleton } from '@mui/material';
 import Loader from '../../components/Loader';
 import { FaDownload } from 'react-icons/fa';
 import CancelRequests from '../../components/admin/CancelRequests';
@@ -184,6 +184,31 @@ const AdminOrders = ({ scrollRef }) => {
     }
   };
 
+  const OrderCardSkeleton = () => {
+  return (
+    <div
+      className={`flex flex-wrap sm:flex-nowrap gap-4 p-6 rounded-lg ${
+        theme === 'light' ? 'bg-white shadow-lg border border-gray-200' : 'bg-gray-800 shadow-xl border border-gray-700'
+      }`}
+    >
+      <Skeleton
+        variant="circular"
+        width={48}
+        height={48}
+        sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
+      />
+      <div className="flex flex-col flex-grow gap-2">
+        <Skeleton variant="text" width="40%" height={28} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+        <Skeleton variant="text" width="60%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="55%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="50%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="text" width="70%" height={20} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+        <Skeleton variant="rectangular" width={120} height={36} sx={{ borderRadius: 1, bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+      </div>
+    </div>
+  );
+};
+
   const getAvatarUrl = (item) => {
     return item?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}`;
   };
@@ -238,7 +263,11 @@ const AdminOrders = ({ scrollRef }) => {
         {activeTab === 'orders' ? (
           <div className="space-y-4 flex-grow">
             {loading ? (
-              <Loader />
+              <>
+                {[...Array(5)].map((_, id) => (
+                  <OrderCardSkeleton key={id} />
+                ))}
+              </>
             ) : orders.length === 0 ? (
               <div className="text-center text-gray-500 mt-4 text-lg">
                 No orders found.
