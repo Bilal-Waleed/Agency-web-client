@@ -7,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../../components/Toast';
-import Loader from '../../components/Loader';
 import dayjs from 'dayjs';
 import { FaRegCalendarAlt } from 'react-icons/fa';
 import DatePicker from 'react-datepicker';
@@ -121,9 +120,91 @@ const AdminDashboard = () => {
     serviceOrders: dashboardData.serviceOrders.filter(item => item && item.name) || [],
   };
 
+const ChartSkeleton = ({ height = 300 }) => {
+  const barColor =
+    theme === 'light' ? 'rgba(209, 213, 219, 0.8)' : 'rgba(75, 85, 99, 0.7)'; 
+  const bgColor =
+    theme === 'light' ? 'rgba(243, 244, 246, 1)' : 'rgba(31, 41, 55, 1)'; 
+
+  return (
+    <div
+      className="w-full animate-pulse rounded-lg"
+      style={{
+        height,
+        backgroundColor: bgColor,
+        padding: '1rem',
+      }}
+    >
+      <div className="flex items-end justify-between h-full px-2 py-2">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="rounded-md"
+            style={{
+              width: '10%',
+              height: `${30 + i * 10}%`,
+              backgroundColor: barColor,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const PieChartSkeleton = ({ size = 250 }) => {
+  const backgroundColor = theme === 'light' ? '#f3f4f6' : '#1f2937';
+  const sliceColor = theme === 'light' ? '#e5e7eb' : '#374151';
+
+  const sliceCount = 6;
+
+  return (
+    <div
+      className="animate-pulse mx-auto relative rounded-full"
+      style={{
+        width: size,
+        height: size,
+        backgroundColor,
+      }}
+    >
+      <div
+        className="absolute rounded-full"
+        style={{
+          width: size * 0.4,
+          height: size * 0.4,
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: theme === 'light' ? '#d1d5db' : '#111827',
+        }}
+      />
+
+      {[...Array(sliceCount)].map((_, i) => {
+        const rotate = i * (360 / sliceCount);
+        return (
+          <div
+            key={i}
+            className="absolute origin-bottom-left"
+            style={{
+              width: '50%',
+              height: '50%',
+              backgroundColor: sliceColor,
+              transform: `rotate(${rotate}deg) skewY(-30deg)`,
+              transformOrigin: '100% 100%',
+              opacity: 0.8 - i * 0.1,
+              borderRadius: '0 100% 0 0',
+              top: 0,
+              left: 0,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
   return (
     <div className={`min-h-screen flex flex-col ${theme === 'light' ? 'bg-gray-100' : 'bg-gray-900'} text-${theme === 'light' ? 'black' : 'white'}`}>
-      {loading && <Loader />}
       <Sidebar />
       <div className="ml-16 mt-2 p-4 sm:p-6 flex flex-col flex-grow">
         <TopBar />
@@ -196,139 +277,97 @@ const AdminDashboard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
-            {safeData.monthlyOrders.length > 0 && (
-              <div className={`p-4 rounded-lg ${theme === 'light' ? 'bg-white' : 'bg-gray-800'}`}>
-                <h2 className="text-base sm:text-lg font-semibold mb-4">Monthly Orders</h2>
-                <div className="w-full h-[200px] sm:h-[300px] md:h-[350px] lg:h-[400px]">
-                  <BarChart
-                    xAxis={[{
-                      scaleType: 'band',
-                      data: safeData.monthlyOrders.map(d => d._id),
-                      tickLabelStyle: { fill: chartTextColor }
-                    }]}
-                    series={[{
-                      data: safeData.monthlyOrders.map(d => d.count),
-                      label: 'Orders',
-                      color: '#6366f1',
-                      labelStyle: { fill: chartTextColor }
-                    }]}
-                    sx={{
-                      ...chartCommonStyles,
-                      '& .MuiChartsLegend-root text': { fill: chartTextColor },
-                      '& .MuiChartsAxis-root text': { fill: chartTextColor }
-                    }}
-                    width={undefined}
-                    height={undefined}
-                    slotProps={{ container: { className: 'w-full h-full' } }}
-                  />
-                </div>
-                {lastUpdated && (
-                  <p className="text-sm text-gray-400 mt-4 text-right">
-                    Last updated: {lastUpdated.toLocaleTimeString()}
-                  </p>
-                )}
-              </div>
-            )}
-            {safeData.monthlyUsers.length > 0 && (
-              <div className={`p-4 rounded-lg ${theme === 'light' ? 'bg-white' : 'bg-gray-800'}`}>
-                <h2 className="text-base sm:text-lg font-semibold mb-4">Monthly New Users</h2>
-                <div className="w-full h-[200px] sm:h-[300px] md:h-[350px] lg:h-[400px]">
-                  <LineChart
-                    xAxis={[{
-                      scaleType: 'point',
-                      data: safeData.monthlyUsers.map(d => d._id),
-                      tickLabelStyle: { fill: chartTextColor }
-                    }]}
-                    series={[{
-                      data: safeData.monthlyUsers.map(d => d.count),
-                      label: 'Users',
-                      area: true,
-                      showMark: true,
-                      color: '#10b981',
-                      labelStyle: { fill: chartTextColor }
-                    }]}
-                    sx={{
-                      ...chartCommonStyles,
-                      '& .MuiChartsLegend-root text': { fill: chartTextColor },
-                      '& .MuiChartsAxis-root text': { fill: chartTextColor }
-                    }}
-                    width={undefined}
-                    height={undefined}
-                    slotProps={{ container: { className: 'w-full h-full' } }}
-                  />
-                </div>
-                {lastUpdated && (
-                  <p className="text-sm text-gray-400 mt-4 text-right">
-                    Last updated: {lastUpdated.toLocaleTimeString()}
-                  </p>
-                )}
-              </div>
-            )}
-            {safeData.monthlyContacts.length > 0 && (
-              <div className={`p-4 rounded-lg ${theme === 'light' ? 'bg-white' : 'bg-gray-800'}`}>
-                <h2 className="text-base sm:text-lg font-semibold mb-4">Monthly Contacts</h2>
-                <div className="w-full h-[200px] sm:h-[300px] md:h-[350px] lg:h-[400px]">
-                  <BarChart
-                    xAxis={[{
-                      scaleType: 'band',
-                      data: safeData.monthlyContacts.map(d => d._id),
-                      tickLabelStyle: { fill: chartTextColor }
-                    }]}
-                    series={[{
-                      data: safeData.monthlyContacts.map(d => d.count),
-                      label: 'Contacts',
-                      color: '#f59e0b',
-                      labelStyle: { fill: chartTextColor }
-                    }]}
-                    sx={{
-                      ...chartCommonStyles,
-                      '& .MuiChartsLegend-root text': { fill: chartTextColor },
-                      '& .MuiChartsAxis-root text': { fill: chartTextColor }
-                    }}
-                    width={undefined}
-                    height={undefined}
-                    slotProps={{ container: { className: 'w-full h-full' } }}
-                  />
-                </div>
-                {lastUpdated && (
-                  <p className="text-sm text-gray-400 mt-4 text-right">
-                    Last updated: {lastUpdated.toLocaleTimeString()}
-                  </p>
-                )}
-              </div>
-            )}
-            {safeData.serviceOrders.length > 0 && (
-              <div className={`p-4 rounded-lg ${theme === 'light' ? 'bg-white' : 'bg-gray-800'}`}>
-                <h2 className="text-base sm:text-lg font-semibold mb-4">Service-wise Order Distribution</h2>
-                <div className="w-full h-[250px] sm:h-[350px] md:h-[400px] lg:h-[400px]">
-                  <PieChart
-                    series={[{
-                      data: safeData.serviceOrders.map((item, idx) => ({
-                        id: idx,
-                        value: item.count,
-                        label: item.name.length > 12 ? item.name.slice(0, 12) + '…' : item.name,
-                      })),
-                      labelFontSize: window.innerWidth < 640 ? 6 : window.innerWidth < 1024 ? 10 : 12,
-                      labelColor: chartTextColor
-                    }]}
-                    sx={{
-                      ...chartCommonStyles,
-                      '& .MuiChartsLegend-root text': { fill: chartTextColor },
-                      '& .MuiChartsAxis-root text': { fill: chartTextColor }
-                    }}
-                    width={undefined}
-                    height={undefined}
-                    slotProps={{ container: { className: 'w-full h-full' } }}
-                  />
-                </div>
-                {lastUpdated && (
-                  <p className="text-sm text-gray-400 mt-4 text-right">
-                    Last updated: {lastUpdated.toLocaleTimeString()}
-                  </p>
-                )}
-              </div>
+          <div className={`p-4 rounded-lg ${theme === 'light' ? 'bg-white' : 'bg-gray-800'}`}>
+            <h2 className="text-base sm:text-lg font-semibold mb-4">Monthly Orders</h2>
+            <div className="w-full h-[200px] sm:h-[300px] md:h-[350px] lg:h-[400px]">
+              {loading ? (
+                <ChartSkeleton height="100%" />
+              ) : safeData.monthlyOrders.length > 0 ? (
+                <BarChart
+                  xAxis={[{ scaleType: 'band', data: safeData.monthlyOrders.map(d => d._id) }]}
+                  series={[{ data: safeData.monthlyOrders.map(d => d.count), label: 'Orders', color: '#6366f1' }]}
+                  sx={chartCommonStyles}
+                  slotProps={{ container: { className: 'w-full h-full' } }}
+                />
+              ) : (
+                <p className="text-center text-gray-500 mt-4">No orders data</p>
+              )}
+            </div>
+            {lastUpdated && !loading && (
+              <p className="text-sm text-gray-400 mt-4 text-right">Last updated: {lastUpdated.toLocaleTimeString()}</p>
             )}
           </div>
+
+          <div className={`p-4 rounded-lg ${theme === 'light' ? 'bg-white' : 'bg-gray-800'}`}>
+            <h2 className="text-base sm:text-lg font-semibold mb-4">Monthly New Users</h2>
+            <div className="w-full h-[200px] sm:h-[300px] md:h-[350px] lg:h-[400px]">
+              {loading ? (
+                <ChartSkeleton height="100%" />
+              ) : safeData.monthlyUsers.length > 0 ? (
+                <LineChart
+                  xAxis={[{ scaleType: 'point', data: safeData.monthlyUsers.map(d => d._id) }]}
+                  series={[{ data: safeData.monthlyUsers.map(d => d.count), label: 'Users', area: true, showMark: true, color: '#10b981' }]}
+                  sx={chartCommonStyles}
+                  slotProps={{ container: { className: 'w-full h-full' } }}
+                />
+              ) : (
+                <p className="text-center text-gray-500 mt-4">No user data</p>
+              )}
+            </div>
+            {lastUpdated && !loading && (
+              <p className="text-sm text-gray-400 mt-4 text-right">Last updated: {lastUpdated.toLocaleTimeString()}</p>
+            )}
+          </div>
+
+          <div className={`p-4 rounded-lg ${theme === 'light' ? 'bg-white' : 'bg-gray-800'}`}>
+            <h2 className="text-base sm:text-lg font-semibold mb-4">Monthly Contacts</h2>
+            <div className="w-full h-[200px] sm:h-[300px] md:h-[350px] lg:h-[400px]">
+              {loading ? (
+                <ChartSkeleton height="100%" />
+              ) : safeData.monthlyContacts.length > 0 ? (
+                <BarChart
+                  xAxis={[{ scaleType: 'band', data: safeData.monthlyContacts.map(d => d._id) }]}
+                  series={[{ data: safeData.monthlyContacts.map(d => d.count), label: 'Contacts', color: '#f59e0b' }]}
+                  sx={chartCommonStyles}
+                  slotProps={{ container: { className: 'w-full h-full' } }}
+                />
+              ) : (
+                <p className="text-center text-gray-500 mt-4">No contact data</p>
+              )}
+            </div>
+            {lastUpdated && !loading && (
+              <p className="text-sm text-gray-400 mt-4 text-right">Last updated: {lastUpdated.toLocaleTimeString()}</p>
+            )}
+          </div>
+
+          <div className={`p-4 rounded-lg ${theme === 'light' ? 'bg-white' : 'bg-gray-800'}`}>
+            <h2 className="text-base sm:text-lg font-semibold mb-4">Service-wise Order Distribution</h2>
+            <div className="w-full h-[250px] sm:h-[350px] md:h-[400px] lg:h-[400px]">
+              {loading ? (
+                <PieChartSkeleton height="100%" />
+              ) : safeData.serviceOrders.length > 0 ? (
+                <PieChart
+                  series={[{
+                    data: safeData.serviceOrders.map((item, idx) => ({
+                      id: idx,
+                      value: item.count,
+                      label: item.name.length > 12 ? item.name.slice(0, 12) + '…' : item.name,
+                    })),
+                    labelFontSize: window.innerWidth < 640 ? 6 : window.innerWidth < 1024 ? 10 : 12,
+                    labelColor: chartTextColor,
+                  }]}
+                  sx={chartCommonStyles}
+                  slotProps={{ container: { className: 'w-full h-full' } }}
+                />
+              ) : (
+                <p className="text-center text-gray-500 mt-4">No service data</p>
+              )}
+            </div>
+            {lastUpdated && !loading && (
+              <p className="text-sm text-gray-400 mt-4 text-right">Last updated: {lastUpdated.toLocaleTimeString()}</p>
+            )}
+          </div>
+        </div>
         )}
       </div>
     </div>
