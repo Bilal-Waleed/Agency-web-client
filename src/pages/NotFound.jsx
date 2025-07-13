@@ -7,7 +7,7 @@ const NotFound = () => {
 
   return (
     <div
-      className={`min-h-[calc(100vh-80px)] flex flex-col items-center justify-center ${
+      className={`min-h-screen flex flex-col items-center justify-center ${
         theme === 'light' ? 'bg-white text-black' : 'bg-gray-900 text-white'
       } px-2 lg:px-12 `}
     >

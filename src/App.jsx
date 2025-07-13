@@ -1,5 +1,5 @@
 import React, { useContext, useRef } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation , Navigate} from 'react-router-dom';
 import { AuthContext } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { ProtectedRoute, RestrictedRoute } from './components/RouteProtection';
@@ -31,7 +31,8 @@ import AdminScheduledMeetings from './pages/admin/AdminScheduledMeetings';
 const App = () => {
   const { user, isLoading } = useContext(AuthContext);
   const location = useLocation();
-  const scrollRef = useRef(); 
+  const scrollRef = useRef();
+
 
   if (user) {
     console.log('User:', user);
@@ -42,13 +43,14 @@ const App = () => {
   }
 
   const isAdminRoute = location.pathname.startsWith('/admin');
+    const is404Route = location.pathname === '/404';
 
   return (
-    <CustomScrollbar ref={scrollRef}>
+    <CustomScrollbar ref={scrollRef} noNavbar={is404Route}>
       <div className="flex flex-col">
         <ToastProvider />
-        <ScrollToTop scrollRef={scrollRef} />
-        {!isAdminRoute && <Navbar />}
+        <ScrollToTop scrollRef={scrollRef}/>
+        {!isAdminRoute !== is404Route && <Navbar />}
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Home scrollRef={scrollRef} />} />
@@ -74,7 +76,8 @@ const App = () => {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
             </Route>
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={<Navigate to="/404" replace />} />
+            <Route path="/404" element={<NotFound />} />
           </Routes>
         </main>
         <Footer />

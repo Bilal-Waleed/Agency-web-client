@@ -2,7 +2,7 @@ import React, { useEffect, forwardRef } from 'react';
 import { Box } from '@mui/material';
 import { useTheme } from '../context/ThemeContext';
 
-const CustomScrollbar = forwardRef(({ children, className = '' }, ref) => {
+const CustomScrollbar = forwardRef(({ children, className = '', noNavbar = false }, ref) => {
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -26,8 +26,8 @@ const CustomScrollbar = forwardRef(({ children, className = '' }, ref) => {
       ref={ref}
       className={`relative overflow-y-auto ${className}`}
       sx={{
-        height: 'calc(100vh - 4rem)',
-        marginTop: '4rem',
+        height: noNavbar ? '100vh' : 'calc(100vh - 4rem)',
+        marginTop: noNavbar ? 0 : '4rem',
         width: '100%',
         backgroundColor: theme === 'dark' ? '#111827' : 'transparent',
         '&::-webkit-scrollbar': {
