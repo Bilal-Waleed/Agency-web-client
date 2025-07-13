@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Breadcrumbs, Link, Typography } from '@mui/material';
 import { showToast } from '../components/Toast';
-import Loader from '../components/Loader';
+import Skeleton from '@mui/material/Skeleton';
 import { socket } from '../socket';
 import ScheduleMeetingModal from '../components/ScheduleMeetingModal';
 import { FaCalendarAlt } from 'react-icons/fa';
@@ -87,12 +87,41 @@ const Service = () => {
   };
 
   if (loading) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${theme === 'light' ? 'bg-white text-black' : 'bg-gray-900 text-white'}`}>
-        <Loader />
+  return (
+    <div className={`min-h-screen ${theme === 'light' ? 'bg-white text-black' : 'bg-gray-900 text-white'} pt-18 px-4 sm:px-8 lg:px-12 pb-10`}>
+      <div className="max-w-5xl mx-auto">
+        <div className="flex flex-col lg:flex-row gap-12 mt-4">
+          <div className="w-full md:w-3/5 lg:w-2/4 mx-auto">
+            <Skeleton variant="rectangular" height={300} className="rounded-lg" />
+          </div>
+          <div className="lg:w-1/2 w-full space-y-4">
+            <Skeleton variant="text" height={40} width="70%" />
+            <Skeleton variant="text" height={10} width="20%" />
+            <Skeleton variant="text" height={24} width="100%" />
+            <Skeleton variant="text" height={20} width="80%" />
+            <Skeleton variant="text" height={20} width="60%" />
+            <Skeleton variant="text" height={20} width="40%" />
+            <div className="flex gap-4 mt-4">
+              <Skeleton variant="rectangular" height={40} width={120} className="rounded-md" />
+              <Skeleton variant="rectangular" height={40} width={180} className="rounded-md" />
+            </div>
+          </div>
+        </div>
+        <div className="mt-20 space-y-4">
+          <Skeleton variant="text" height={36} width="50%" />
+          <Skeleton variant="text" height={10} width="20%" />
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="border-b pb-4 space-y-2">
+              <Skeleton variant="text" height={20} width="60%" />
+              <Skeleton variant="text" height={16} width="90%" />
+            </div>
+          ))}
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
 
   if (!selectedService) return null;
 
