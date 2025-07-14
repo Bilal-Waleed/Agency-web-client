@@ -4,6 +4,7 @@ import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../components/Toast';
 import { socket, initializeSocket, disconnectSocket, updateSocketUser } from '../socket';
+import { debounce } from 'lodash'; 
 
 export const AuthContext = createContext();
 
@@ -23,24 +24,24 @@ const fetchUser = async (token, navigate) => {
   }
 };
 
-const refreshToken = async () => {
-  try {
-    const token = Cookies.get('token');
-    if (!token) return null;
+// const refreshToken = async () => {
+//   try {
+//     const token = Cookies.get('token');
+//     if (!token) return null;
 
-    const res = await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/admin/refresh-token`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+//     const res = await axios.post(
+//       `${import.meta.env.VITE_BACKEND_URL}/api/admin/refresh-token`,
+//       {},
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
 
-    const newToken = res.data.token;
-    Cookies.set('token', newToken, { expires: 7 });
-    return newToken;
-  } catch {
-    return null;
-  }
-};
+//     const newToken = res.data.token;
+//     Cookies.set('token', newToken, { expires: 7 });
+//     return newToken;
+//   } catch {
+//     return null;
+//   }
+// };
 
 const AuthContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -52,13 +53,16 @@ const AuthContextProvider = ({ children }) => {
   useEffect(() => {
     userRef.current = user;
     lastRoleRef.current = user?.isAdmin;
-    if (user?._id) updateSocketUser(user);
+    if (user?._id && socket.connected) {
+      updateSocketUser(user);
+    }
   }, [user]);
 
   useEffect(() => {
     const token = Cookies.get('token');
     if (!token) {
       setIsLoading(false);
+      disconnectSocket();
       return;
     }
 
@@ -70,7 +74,7 @@ const AuthContextProvider = ({ children }) => {
       setIsLoading(false);
     });
 
-    socket.on('userChange', async (change) => {
+    const handleUserChange = debounce(async (change) => {
       const currentUser = userRef.current;
       const token = Cookies.get('token');
 
@@ -85,53 +89,29 @@ const AuthContextProvider = ({ children }) => {
       }
 
       if (change.operationType === 'update') {
-        try {
-          const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/user`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          const updatedUser = res.data.user;
-
-          // Only update if something changed
-          if (updatedUser.isAdmin !== lastRoleRef.current) {
-            showToast(
-              updatedUser.isAdmin
-                ? 'You have been granted admin access.'
-                : 'Your admin access has been revoked.',
-              updatedUser.isAdmin ? 'success' : 'info'
-            );
-            lastRoleRef.current = updatedUser.isAdmin;
-          }
-
-          // Only set user if it's different
-          if (JSON.stringify(currentUser) !== JSON.stringify(updatedUser)) {
-            setUser(updatedUser);
-          }
-        } catch {
-          const newIsAdmin = change.fullDocument?.isAdmin;
-
-          if (
-            newIsAdmin !== undefined &&
-            newIsAdmin !== lastRoleRef.current
-          ) {
-            showToast(
-              newIsAdmin
-                ? 'You have been granted admin access.'
-                : 'Your admin access has been revoked.',
-              newIsAdmin ? 'success' : 'info'
-            );
-            setUser({ ...currentUser, isAdmin: newIsAdmin });
-            lastRoleRef.current = newIsAdmin;
+        const newIsAdmin = change.fullDocument?.isAdmin;
+        if (newIsAdmin !== undefined && newIsAdmin !== lastRoleRef.current) {
+          showToast(
+            newIsAdmin
+              ? 'You have been granted admin access.'
+              : 'Your admin access has been revoked.',
+            newIsAdmin ? 'success' : 'info'
+          );
+          setUser({ ...currentUser, isAdmin: newIsAdmin });
+          lastRoleRef.current = newIsAdmin;
+          if (!newIsAdmin) {
+            navigate('/'); 
           }
         }
       }
-    });
+    }, 300); 
+
+    socket.on('userChange', handleUserChange);
 
     return () => {
-      socket.off('userChange');
-      disconnectSocket();
+      socket.off('userChange', handleUserChange);
     };
-  }, []);
+  }, [navigate]);
 
   return (
     <AuthContext.Provider value={{ user, setUser, isLoading }}>
