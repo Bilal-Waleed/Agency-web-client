@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import axios from '../utils/axiosConfig';
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../components/Toast';
@@ -8,20 +8,11 @@ import { debounce } from 'lodash';
 
 export const AuthContext = createContext();
 
-const fetchUser = async (token, navigate) => {
-  try {
-    const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/user`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data.user;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      Cookies.remove('token');
-      showToast('Session expired or user deleted. Please log in again.', 'error');
-      navigate('/login');
-    }
-    return null;
-  }
+const fetchUser = async (token) => {
+  const res = await axios.get('/api/auth/user', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data.user;
 };
 
 // const refreshToken = async () => {
