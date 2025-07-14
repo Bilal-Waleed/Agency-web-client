@@ -1,28 +1,34 @@
-// src/socket.js
 import { io } from 'socket.io-client';
 
 const socket = io(import.meta.env.VITE_BACKEND_URL, {
-  autoConnect: false, 
+  autoConnect: false,
   withCredentials: true,
   transports: ['websocket'],
-  reconnection: true, 
-  reconnectionAttempts: Infinity, 
-  reconnectionDelay: 1000, 
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
 });
 
 let isInitialized = false;
+let userId = null;
+let isAdmin = false;
 
-const initializeSocket = (user, isAdmin) => {
+const initializeSocket = (user, isUserAdmin) => {
   if (isInitialized) return;
+
+  userId = user?._id;
+  isAdmin = isUserAdmin;
 
   socket.connect();
   isInitialized = true;
 
   socket.on('connect', () => {
     console.log(`Socket connected: ${socket.id}`);
-    if (user?._id) {
-      socket.emit('joinUserRoom', `user:${user._id}`);
+
+    if (userId) {
+      socket.emit('joinUserRoom', `user:${userId}`);
     }
+
     if (isAdmin) {
       socket.emit('joinAdmin');
     }
@@ -34,8 +40,21 @@ const initializeSocket = (user, isAdmin) => {
 
   socket.on('disconnect', (reason) => {
     console.log(`Socket disconnected: ${reason}`);
-    isInitialized = false; 
+    isInitialized = false;
   });
+};
+
+const updateSocketUser = (newUser) => {
+  userId = newUser?._id;
+  isAdmin = newUser?.isAdmin;
+
+  if (socket.connected && userId) {
+    socket.emit('joinUserRoom', `user:${userId}`);
+  }
+
+  if (socket.connected && isAdmin) {
+    socket.emit('joinAdmin');
+  }
 };
 
 const disconnectSocket = () => {
@@ -46,4 +65,4 @@ const disconnectSocket = () => {
   }
 };
 
-export { socket, initializeSocket, disconnectSocket };
+export { socket, initializeSocket, disconnectSocket, updateSocketUser };
