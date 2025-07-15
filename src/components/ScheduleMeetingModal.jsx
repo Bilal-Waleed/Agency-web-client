@@ -73,9 +73,8 @@ const ScheduleMeetingModal = ({
           'success'
         );
         onClose(true);
-      } else {
-        showToast(response.data.message || 'Something went wrong', 'error');
       }
+       
     } catch (error) {
       if (error.response?.status === 409) {
         showToast(error.response.data.message, 'info');

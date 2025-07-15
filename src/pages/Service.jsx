@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../utils/axiosConfig';
 import { Breadcrumbs, Link, Typography } from '@mui/material';
 import { showToast } from '../components/Toast';
 import Skeleton from '@mui/material/Skeleton';
@@ -22,15 +22,15 @@ const Service = () => {
   useEffect(() => {
     const fetchServiceById = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/services/${id}`);
+        const response = await axios.get(`/api/services/${id}`);
         if (response.data.success) {
           setSelectedService(response.data.data);
         } else {
-          showToast(response.data.message || 'Service not found', 'error');
+          console.log(response.data.message || 'Service not found', 'error');
           navigate('/services');
         }
       } catch (err) {
-        showToast('Error loading service', 'error');
+        showToast('Error loading service', 'info');
         navigate('/services');
       } finally {
         setLoading(false);
@@ -47,7 +47,7 @@ const Service = () => {
 
     const handleServiceDeleted = ({ id: deletedId }) => {
       if (deletedId === id) {
-        showToast('This service has been deleted', 'error');
+        showToast('This service has been deleted', 'info');
         navigate('/services');
       }
     };

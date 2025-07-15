@@ -135,7 +135,7 @@ const Order = () => {
       } else {
         const msg = err.response?.data?.error || 'Failed to submit order';
         setErrors({ api: msg });
-        showToast(msg, 'error');
+        showToast(msg, 'info');
       }
     } finally {
       setLoading(false);
@@ -437,9 +437,6 @@ const Order = () => {
                 <div className="text-red-500 text-sm mt-1">{errors.paymentMethod}</div>
               )}
             </div>
-            {errors.api && (
-              <div className="text-red-500 text-sm text-center">{errors.api}</div>
-            )}
             <div>
               <button
                 type="submit"

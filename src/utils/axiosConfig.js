@@ -10,7 +10,7 @@ axiosInstance.interceptors.response.use(
   response => response,
   error => {
     if (!error.response) {
-      showToast('Network error. Please check your internet.', 'error');
+      showToast('Network error. Please check your internet.', 'info');
     } else {
       const status = error.response.status;
       const message = error.response.data?.message || 'Something went wrong';
@@ -18,18 +18,18 @@ axiosInstance.interceptors.response.use(
       if (status === 401) {
         Cookies.remove('token');
         if (message === 'Invalid token') {
-          showToast('Session expired. Please login again.', 'error');
+          showToast('Session expired. Please login again.', 'info');
           window.location.href = '/login';
         } else if (message === 'User not found') {
-          showToast('User account deleted. Please register again.', 'error');
+          showToast('User account deleted. Please register again.', 'info');
           window.location.href = '/register';
         } else {
-          showToast(message, 'error');
+          showToast(message, 'info');
         }
       } else if (status === 503) {
-        showToast(message, 'error');
+        showToast(message, 'info');
       } else {
-        showToast(message, 'error');
+        showToast(message, 'info');
       }
     }
 

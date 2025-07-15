@@ -20,7 +20,7 @@ const Services = () => {
         if (response.data.success) {
           setServices(response.data.data);
         } else {
-          showToast(response.data.message || 'Failed to load services', 'error');
+          showToast(response.data.message || 'Failed to load services', 'info');
         }
       } catch (err) {
         showToast('Error loading services', 'error');

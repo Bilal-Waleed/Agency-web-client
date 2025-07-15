@@ -16,7 +16,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
     try {
       const token = Cookies.get('token');
       if (!token) {
-        showToast('Please log in to view orders', 'error');
+        showToast('Please log in to view orders', 'info');
         return;
       }
       const response = await axios.get(

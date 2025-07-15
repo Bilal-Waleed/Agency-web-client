@@ -15,25 +15,6 @@ const fetchUser = async (token) => {
   return res.data.user;
 };
 
-// const refreshToken = async () => {
-//   try {
-//     const token = Cookies.get('token');
-//     if (!token) return null;
-
-//     const res = await axios.post(
-//       `${import.meta.env.VITE_BACKEND_URL}/api/admin/refresh-token`,
-//       {},
-//       { headers: { Authorization: `Bearer ${token}` } }
-//     );
-
-//     const newToken = res.data.token;
-//     Cookies.set('token', newToken, { expires: 7 });
-//     return newToken;
-//   } catch {
-//     return null;
-//   }
-// };
-
 const AuthContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
