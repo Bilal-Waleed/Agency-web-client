@@ -33,7 +33,7 @@ const AdminServices = () => {
       setLoading(true);
       try {
         const token = Cookies.get('token');
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/services`, {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/services`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setServices(response.data.data);

@@ -145,8 +145,8 @@ const AdminMessages = ({ scrollRef }) => {
       <div className="ml-16 mt-2 p-6 flex flex-col flex-grow">
         <TopBar />
         <h1 className={`text-3xl font-bold mb-6 ${theme === 'light' ? 'text-black' : 'text-white'}`}>
-          Messages
-          <div className="w-18 h-1 bg-[#646cff] mt-2"></div>
+          Contact Messages
+          <div className="w-36 h-1 bg-[#646cff] mt-2"></div>
         </h1>
         <div className="space-y-4 flex-grow">
          {loading ? (

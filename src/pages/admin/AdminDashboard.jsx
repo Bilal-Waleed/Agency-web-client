@@ -145,7 +145,7 @@ const AdminDashboard = () => {
 
     return (
       <div
-        className="animate-pulse mx-auto relative rounded-full"
+        className="animate-pulse mx-auto relative rounded-full mt-10"
         style={{
           width: size,
           height: size,

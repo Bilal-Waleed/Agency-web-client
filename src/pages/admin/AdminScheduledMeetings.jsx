@@ -23,6 +23,7 @@ const AdminScheduledMeetings = ({ scrollRef }) => {
   const meetingsPerPage = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const [acceptLoading, setAcceptLoading] = useState({});
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -126,6 +127,8 @@ useEffect(() => {
   };
 }, []);
   const handleAcceptMeeting = async (meetingId) => {
+    setAcceptLoading((prev) => ({ ...prev, [meetingId]: true }));
+
     try {
       const token = Cookies.get('token');
       const response = await axios.put(
@@ -133,18 +136,21 @@ useEffect(() => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
       if (response.data.success) {
         showToast('Meeting accepted successfully', 'success');
         setMeetings((prevMeetings) =>
-        prevMeetings.map((meeting) =>
-          meeting._id === meetingId ? { ...meeting, status: 'accepted' } : meeting
-        )
-      );
+          prevMeetings.map((meeting) =>
+            meeting._id === meetingId ? { ...meeting, status: 'accepted' } : meeting
+          )
+        );
       } else {
         showToast(response.data.message || 'Failed to accept meeting', 'error');
       }
     } catch (error) {
       showToast('Error accepting meeting', 'error');
+    } finally {
+      setAcceptLoading((prev) => ({ ...prev, [meetingId]: false }));
     }
   };
 
@@ -269,6 +275,7 @@ useEffect(() => {
                       onClick={() => handleAcceptMeeting(meeting._id)}
                       variant="contained"
                       size="small"
+                      disabled={acceptLoading[meeting._id]}
                       sx={{
                         textTransform: 'none',
                         fontWeight: 'medium',
@@ -280,7 +287,7 @@ useEffect(() => {
                         },
                       }}
                     >
-                      Accept
+                      {acceptLoading[meeting._id] ? 'Accepting…' : 'Accept'}
                     </Button>
                   )}
                   <Button
