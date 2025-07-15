@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Box, Typography, Button, TextField } from '@mui/material';
-import axios from 'axios';
+import axios from '../utils/axiosConfig';
 import Cookies from 'js-cookie';
 import { showToast } from './Toast';
 import { IoClose } from 'react-icons/io5';
@@ -20,7 +20,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
         return;
       }
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/order/user`,
+        `/api/order/user`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -28,10 +28,6 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
       setOrders(response.data.data || []);
     } catch (error) {
       console.error('Error fetching user orders:', error);
-      showToast(
-        error.response?.data?.message || 'Failed to load orders',
-        'error'
-      );
     }
   };
 
@@ -40,7 +36,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
       const token = Cookies.get('token');
       if (!token) return;
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/order/user-cancel-requests`,
+        `/api/order/user-cancel-requests`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -48,10 +44,6 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
       setCancelRequests(response.data.data || []);
     } catch (error) {
       console.error('Error fetching cancel requests:', error);
-      showToast(
-        error.response?.data?.message || 'Failed to load cancel requests',
-        'error'
-      );
     }
   };
 
@@ -90,7 +82,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
     try {
       const token = Cookies.get('token');
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/admin/cancel-requests`,
+        `/api/admin/cancel-requests`,
         { orderId, reason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -103,10 +95,6 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
       fetchCancelRequests(); 
     } catch (error) {
       console.error('Error submitting cancel request:', error);
-      showToast(
-        error?.response?.data?.message || 'Failed to submit cancel request',
-        'error'
-      );
     } finally {
       setSubmittingOrderId(null);
     }
