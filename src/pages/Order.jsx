@@ -55,6 +55,7 @@ const Order = () => {
   const [loading, setLoading] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(null);
+  const [tempId, setTempId] = useState(null);
 
   useEffect(() => {
     if (location.state?.projectType) {
@@ -96,10 +97,10 @@ const Order = () => {
     try {
       const stripe = await stripePromise;
       const amount = Math.round(calculateHalfPayment(formData.projectBudget) * 100);
-      const { files, ...orderDataWithoutFiles } = formData; 
+      const { files, ...orderDataWithoutFiles } = formData;
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/order/create-checkout-session`,
-        { amount, orderData: orderDataWithoutFiles },
+        { amount, orderData: orderDataWithoutFiles, tempId },
         {
           headers: {
             'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ const Order = () => {
           },
         }
       );
-      sessionStorage.setItem('pendingOrderData', JSON.stringify(formData));
+      sessionStorage.setItem('pendingOrderData', JSON.stringify({ ...formData, tempId }));
       const { sessionId } = response.data;
       await stripe.redirectToCheckout({ sessionId });
     } catch (err) {
@@ -121,7 +122,37 @@ const Order = () => {
     e.preventDefault();
     try {
       await validationSchema.validate(formData, { abortEarly: false });
-      setPaymentAmount(calculateHalfPayment(formData.projectBudget));
+      setLoading(true);
+
+      const formDataToSend = new FormData();
+      formDataToSend.append('orderData', JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        projectType: formData.projectType,
+        projectBudget: formData.projectBudget,
+        timeline: formData.timeline,
+        projectDescription: formData.projectDescription,
+        paymentReference: formData.paymentReference,
+        paymentMethod: formData.paymentMethod,
+      }));
+      formData.files.forEach((file) => {
+        formDataToSend.append('files', file);
+      });
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/order`,
+        formDataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${Cookies.get("token")}`,
+          },
+        }
+      );
+
+      setTempId(response.data.tempId);
+      setPaymentAmount(response.data.paymentAmount);
       setIsPaymentModalOpen(true);
     } catch (err) {
       if (err.name === 'ValidationError') {
@@ -132,9 +163,11 @@ const Order = () => {
         setErrors(newErrors);
         showToast('Please fix the form errors', 'error');
       } else {
-        console.error('Submission error:', err);
+        console.error('Submission error:', err.response?.data || err.message);
         showToast('An error occurred', 'error');
       }
+    } finally {
+      setLoading(false);
     }
   };
 

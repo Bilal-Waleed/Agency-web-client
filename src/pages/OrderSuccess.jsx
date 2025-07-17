@@ -1,13 +1,23 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { showToast } from '../components/Toast';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { useTheme } from '../context/ThemeContext';
 
 const OrderSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
+  const { theme } = useTheme();
+  const [dots, setDots] = useState('');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots((prev) => (prev.length < 3 ? prev + '.' : ''));
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const verifyPaymentAndSaveOrder = async () => {
@@ -18,36 +28,9 @@ const OrderSuccess = () => {
           return;
         }
 
-        const formData = JSON.parse(sessionStorage.getItem('pendingOrderData') || '{}');
-        if (!formData || !formData.name) {
-          showToast('Order data not found.', 'error');
-          navigate('/');
-          return;
-        }
-
-        const orderDataString = JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          projectType: formData.projectType,
-          projectBudget: formData.projectBudget,
-          timeline: formData.timeline,
-          projectDescription: formData.projectDescription,
-          paymentReference: formData.paymentReference,
-          paymentMethod: formData.paymentMethod,
-        });
-
-        console.log('Sending order data:', orderDataString);
-        console.log('Sending tempId:', formData.tempId);
-
         const response = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/order`,
-          {
-            sessionId,
-            orderData: orderDataString,
-            tempId: formData.tempId,
-            paymentMethod: formData.paymentMethod,
-          },
+          `${import.meta.env.VITE_BACKEND_URL}/api/order/finalize`,
+          { sessionId },
           {
             headers: {
               'Content-Type': 'application/json',
@@ -61,7 +44,7 @@ const OrderSuccess = () => {
         sessionStorage.removeItem('pendingOrderData');
         setTimeout(() => navigate('/order'), 3000);
       } catch (error) {
-        console.error('Error saving order:', error.response?.data || error.message);
+        console.error('Error finalizing order:', error.response?.data || error.message);
         showToast('Error verifying payment or saving order.', 'error');
         sessionStorage.removeItem('pendingOrderData');
         navigate('/');
@@ -76,10 +59,42 @@ const OrderSuccess = () => {
   }, [sessionId, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold mb-4">Processing Payment...</h1>
-        <p>Please wait while we verify your payment and save your order.</p>
+    <div
+      className={`min-h-screen flex flex-col items-center justify-center ${
+        theme === 'light' ? 'bg-white text-black' : 'bg-gray-900 text-white'
+      } pt-14 px-4 sm:px-8 lg:px-12 pb-10`}
+    >
+      <div className="w-full max-w-5xl flex flex-col lg:flex-row gap-20">
+        <div className="lg:w-1/2 w-full flex flex-col">
+          <h1 className="text-3xl font-bold mb-2 mt-2">Order Confirmation</h1>
+          <div className="w-24 h-1 bg-[#646cff] mb-6"></div>
+          <img
+            src="/images/info.png"
+            alt="Order Success"
+            className="w-full max-w-md h-auto md:mx-auto sm:mx-auto"
+          />
+        </div>
+
+        <div className="lg:w-1/2 w-full flex flex-col justify-center">
+          <h2 className="text-2xl font-semibold mb-4">
+            Processing Payment<span className="inline-block">{dots}</span>
+          </h2>
+          <p className="text-lg mb-6">
+            Please wait while we verify your payment and save your order. You'll be redirected to the order page shortly.
+          </p>
+          <style jsx>{`
+            @keyframes dots {
+              0% { opacity: 0; }
+              50% { opacity: 1; }
+              100% { opacity: 0; }
+            }
+            .dots span {
+              animation: dots 1.5s infinite;
+            }
+            .dots span:nth-child(2) { animation-delay: 0.5s; }
+            .dots span:nth-child(3) { animation-delay: 1s; }
+          `}</style>
+        </div>
       </div>
     </div>
   );
