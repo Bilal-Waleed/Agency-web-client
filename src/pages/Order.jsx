@@ -1,14 +1,15 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { showToast } from '../components/Toast';
-import { Breadcrumbs, Link, Typography } from "@mui/material";
-import { useNavigate } from "react-router";
-import { useRef } from 'react';
+import { Breadcrumbs, Link, Typography, Modal, Box, Button } from '@mui/material';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const validationSchema = Yup.object({
   name: Yup.string()
@@ -52,6 +53,8 @@ const Order = () => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(null);
 
   useEffect(() => {
     if (location.state?.projectType) {
@@ -69,7 +72,15 @@ const Order = () => {
       'Bug Fixing': 'Bug Fixing',
       'WordPress Development': 'Wordpress',
     };
-    return typeMap[type] || type; 
+    return typeMap[type] || type;
+  };
+
+  const calculateHalfPayment = (budget) => {
+    if (!budget) return 0;
+    const [min, max] = budget.replace(/\$/g, '').split('-').map((val) => parseFloat(val.trim()) || 0);
+    if (budget.includes('+')) return 2500;
+    const average = (min + (max || min)) / 2;
+    return average * 0.5;
   };
 
   const handleChange = (e) => {
@@ -80,48 +91,38 @@ const Order = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handlePayment = async () => {
     setLoading(true);
     try {
-      await validationSchema.validate(formData, { abortEarly: false });
-
-      const formDataToSend = new FormData();
-      Object.keys(formData).forEach((key) => {
-        if (key === 'files') {
-          formData.files.forEach((file) => {
-            formDataToSend.append('files', file); 
-          });
-        } else {
-          formDataToSend.append(key, formData[key]);
+      const stripe = await stripePromise;
+      const amount = Math.round(calculateHalfPayment(formData.projectBudget) * 100);
+      const { files, ...orderDataWithoutFiles } = formData; 
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/order/create-checkout-session`,
+        { amount, orderData: orderDataWithoutFiles },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${Cookies.get("token")}`,
+          },
         }
-      });
+      );
+      sessionStorage.setItem('pendingOrderData', JSON.stringify(formData));
+      const { sessionId } = response.data;
+      await stripe.redirectToCheckout({ sessionId });
+    } catch (err) {
+      console.error('Payment error:', err.response?.data || err.message);
+      showToast('Failed to initiate payment', 'error');
+      setLoading(false);
+    }
+  };
 
-      const token = Cookies.get('token');
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/order`, formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setFormData({
-        name: user?.name || '',
-        email: user?.email || '',
-        phone: '',
-        projectType: '',
-        projectBudget: '',
-        timeline: '',
-        projectDescription: '',
-        paymentReference: '',
-        paymentMethod: '',
-        files: [],
-      });
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''; 
-      }
-      setErrors({});
-      showToast(`Thanks for your order, ${formData.name}! Order ID: ${response.data.orderId}`, 'success');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await validationSchema.validate(formData, { abortEarly: false });
+      setPaymentAmount(calculateHalfPayment(formData.projectBudget));
+      setIsPaymentModalOpen(true);
     } catch (err) {
       if (err.name === 'ValidationError') {
         const newErrors = {};
@@ -130,15 +131,10 @@ const Order = () => {
         });
         setErrors(newErrors);
         showToast('Please fix the form errors', 'error');
-      } else if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
-        showToast('No internet connection. Please check your network.', 'error');
       } else {
-        const msg = err.response?.data?.error || 'Failed to submit order';
-        setErrors({ api: msg });
-        showToast(msg, 'info');
+        console.error('Submission error:', err);
+        showToast('An error occurred', 'error');
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -156,7 +152,7 @@ const Order = () => {
             sx={{
               '& .MuiBreadcrumbs-separator': {
                 color: theme === 'light' ? 'text.primary' : '#ffffff',
-              }
+              },
             }}
           >
             <Link
@@ -165,14 +161,11 @@ const Order = () => {
               sx={{
                 color: theme === 'light' ? 'text.primary' : '#ffffff',
                 cursor: 'pointer',
-                '&:hover': {
-                  textDecoration: 'underline',
-                },
+                '&:hover': { textDecoration: 'underline' },
               }}
             >
               Services
             </Link>
-
             {location.state?.projectType && (
               <Link
                 onClick={() => navigate(-1)}
@@ -180,20 +173,13 @@ const Order = () => {
                 sx={{
                   color: theme === 'light' ? 'text.primary' : '#ffffff',
                   cursor: 'pointer',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  },
+                  '&:hover': { textDecoration: 'underline' },
                 }}
               >
                 {location.state.projectType}
               </Link>
             )}
-
-            <Typography
-              sx={{
-                color: theme === 'light' ? 'text.primary' : '#ffffff',
-              }}
-            >
+            <Typography sx={{ color: theme === 'light' ? 'text.primary' : '#ffffff' }}>
               Order
             </Typography>
           </Breadcrumbs>
@@ -383,7 +369,7 @@ const Order = () => {
                 id="file"
                 name="files"
                 multiple
-                ref={fileInputRef} 
+                ref={fileInputRef}
                 className={`mt-1 p-2 w-full border rounded-md ${
                   theme === 'light' ? 'bg-white border-gray-300' : 'bg-gray-800 border-gray-600 text-white'
                 } focus:outline-none focus:ring-2 focus:ring-[#646cff]`}
@@ -432,6 +418,7 @@ const Order = () => {
                 <option value="">Select payment method</option>
                 <option value="JazzCash">JazzCash</option>
                 <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Stripe">Stripe</option>
               </select>
               {errors.paymentMethod && (
                 <div className="text-red-500 text-sm mt-1">{errors.paymentMethod}</div>
@@ -453,6 +440,50 @@ const Order = () => {
           </form>
         </div>
       </div>
+
+      <Modal
+        open={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        aria-labelledby="payment-modal-title"
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400,
+            bgcolor: theme === 'light' ? 'white' : 'grey.900',
+            color: theme === 'light' ? 'black' : 'white',
+            boxShadow: 24,
+            p: 4,
+            borderRadius: 2,
+          }}
+        >
+          <Typography id="payment-modal-title" variant="h6" component="h2">
+            Payment Required
+          </Typography>
+          <Typography sx={{ mt: 2 }}>
+            To place your order, a 50% payment of ${paymentAmount?.toFixed(2)} is required.
+          </Typography>
+          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <Button
+              onClick={() => setIsPaymentModalOpen(false)}
+              sx={{ color: theme === 'light' ? 'gray.600' : 'gray.400' }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePayment}
+              variant="contained"
+              sx={{ bgcolor: '#646cff', '&:hover': { bgcolor: '#535bf2' } }}
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : 'Proceed to Payment'}
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
     </div>
   );
 };

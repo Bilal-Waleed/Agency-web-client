@@ -27,6 +27,7 @@ import AdminServices from './pages/admin/AdminServices';
 import AdminOrders from './pages/admin/AdminOrders';
 import CustomScrollbar from './components/CustomScrollbar';
 import AdminScheduledMeetings from './pages/admin/AdminScheduledMeetings';
+import OrderSuccess from './pages/OrderSuccess.jsx';
 
 const App = () => {
   const { user, isLoading } = useContext(AuthContext);
@@ -76,6 +77,7 @@ const App = () => {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
             </Route>
+            <Route path="/order/success" element={<OrderSuccess/>} />
             <Route path="*" element={<Navigate to="/404" replace />} />
             <Route path="/404" element={<NotFound />} />
           </Routes>
