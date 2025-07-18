@@ -5,17 +5,25 @@ const CompleteOrderModal = ({ isOpen, onClose, onSubmit, orderId }) => {
   const { theme } = useTheme();
   const [message, setMessage] = useState('');
   const [files, setFiles] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = (e) => {
     setFiles(Array.from(e.target.files));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(orderId, message, files);
-    setMessage('');
-    setFiles([]);
-    onClose();
+    setIsSubmitting(true); 
+    try {
+      await onSubmit(orderId, message, files); 
+      setMessage('');
+      setFiles([]);
+      onClose();
+    } catch (error) {
+      console.error('Error submitting order:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -39,6 +47,7 @@ const CompleteOrderModal = ({ isOpen, onClose, onSubmit, orderId }) => {
               }`}
               rows={4}
               placeholder="Enter any additional message for the user..."
+              disabled={isSubmitting}
             />
           </div>
           <div className="mb-4">
@@ -50,6 +59,7 @@ const CompleteOrderModal = ({ isOpen, onClose, onSubmit, orderId }) => {
               className={`w-full p-2 rounded-md border ${
                 theme === 'light' ? 'border-gray-300 bg-white' : 'border-gray-600 bg-gray-700'
               }`}
+              disabled={isSubmitting}
             />
           </div>
           <div className="flex justify-end gap-4">
@@ -57,14 +67,20 @@ const CompleteOrderModal = ({ isOpen, onClose, onSubmit, orderId }) => {
               type="button"
               onClick={onClose}
               className="py-2 px-4 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+              disabled={isSubmitting} 
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="py-2 px-4 bg-[#646cff] text-white rounded-md hover:bg-[#535bf2] transition-colors"
+              className={`py-2 px-4 rounded-md text-white transition-colors ${
+                isSubmitting
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-[#646cff] hover:bg-[#535bf2]'
+              }`}
+              disabled={isSubmitting}
             >
-              Submit
+              {isSubmitting ? 'Submitting...' : 'Submit'}
             </button>
           </div>
         </form>
