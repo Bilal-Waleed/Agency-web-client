@@ -28,7 +28,6 @@ const OrderSuccess = () => {
           return;
         }
 
-        // Check session
         const checkResponse = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/order/check-session/${sessionId}`,
           {
@@ -53,7 +52,6 @@ const OrderSuccess = () => {
         }
 
         if (!isRemainingPayment) {
-          // Initial payment: call /finalize
           const finalizeResponse = await axios.post(
             `${import.meta.env.VITE_BACKEND_URL}/api/order/finalize`,
             { sessionId },
@@ -91,7 +89,7 @@ const OrderSuccess = () => {
     <div
       className={`min-h-screen flex flex-col items-center justify-center ${
         theme === 'light' ? 'bg-white text-black' : 'bg-gray-900 text-white'
-      } pt-14 px-4 sm:px-8 lg:px-12 pb-10`}
+      } pt-10 lg:pt-2 px-4 sm:px-8 lg:px-12 pb-10`}
     >
       <div className="w-full max-w-5xl flex flex-col lg:flex-row gap-20">
         <div className="lg:w-1/2 w-full flex flex-col">
