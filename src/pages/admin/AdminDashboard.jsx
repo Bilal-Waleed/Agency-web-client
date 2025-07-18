@@ -89,9 +89,6 @@ const AdminDashboard = () => {
     socket.on('orderChange', handleUpdate);
     socket.on('contactChange', handleUpdate);
     socket.on('serviceChange', handleUpdate);
-    socket.on('connect_error', () => {
-      showToast('Internet disconnected. Please check your connection.', 'error');
-    });
 
     return () => {
       socket.off('orderChange', handleUpdate);

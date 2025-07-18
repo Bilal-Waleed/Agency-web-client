@@ -71,9 +71,7 @@ const AdminMessages = ({ scrollRef }) => {
 };
 
     socket.on('contactChange', handleContactChange);
-    socket.on('connect_error', () => {
-      showToast('Internet disconnected. Please check your connection.', 'error');
-    });
+
 
     return () => {
       socket.off('contactChange', handleContactChange);

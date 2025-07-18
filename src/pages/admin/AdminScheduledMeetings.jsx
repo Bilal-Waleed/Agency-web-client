@@ -116,10 +116,6 @@ useEffect(() => {
   socket.on('meetingChange', handleMeetingChange);
   socket.on('meetingUI', handleMeetingUIUpdate);
 
-  socket.on('connect_error', () => {
-    showToast('Internet disconnected. Please check your connection.', 'error');
-  });
-
   return () => {
     socket.off('meetingChange', handleMeetingChange);
     socket.off('meetingUI', handleMeetingUIUpdate); 

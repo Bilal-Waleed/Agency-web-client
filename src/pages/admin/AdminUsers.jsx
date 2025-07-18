@@ -46,10 +46,10 @@ const AdminUsers = ({ scrollRef }) => {
 
     const fetchUsers = async () => {
       if (!isOnline) {
-        showToast('Internet disconnected. Please check your connection.', 'error');
         setLoading(false);
         return;
       }
+
 
       setLoading(true);
       try {
@@ -103,9 +103,6 @@ const AdminUsers = ({ scrollRef }) => {
     };
 
     socket.on('userChange', handleUserChange);
-    socket.on('connect_error', () => {
-      showToast('Internet disconnected. Please check your connection.', 'error');
-    });
 
     return () => {
       socket.off('userChange', handleUserChange);

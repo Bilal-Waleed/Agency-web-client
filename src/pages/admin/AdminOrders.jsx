@@ -162,9 +162,6 @@ const AdminOrders = ({ scrollRef }) => {
       showToast(`Order ${data.orderId} completed`, 'success');
       fetchOrders(false);
     });
-    socket.on('connect_error', () => {
-      showToast('Internet disconnected. Please check your connection.', 'error');
-    });
 
     return () => {
       socket.off('orderChange', handleOrderChange);
