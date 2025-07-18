@@ -287,7 +287,6 @@ const AdminUsers = ({ scrollRef }) => {
               sx={{
                 textTransform: 'none',
                 fontWeight: 'bold',
-                padding: { xs: '8px 12px', sm: '8px 16px' },
                 backgroundColor: '#dc2626',
                 '&:hover': {
                   backgroundColor: theme === 'light' ? '#dc2626' : '#991b1b',

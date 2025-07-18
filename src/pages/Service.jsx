@@ -176,13 +176,13 @@ const Service = () => {
             <div className="flex gap-4">
               <button
                 onClick={() => handleOrderNow(selectedService)}
-                className="py-2 px-4 bg-[#646cff] text-white font-semibold rounded-md hover:bg-[#535bf2] transition-colors"
+                className="py-2 px-2 bg-[#646cff] text-white font-semibold rounded-md hover:bg-[#535bf2] transition-colors"
               >
                 Order Now
               </button>
               <button
                 onClick={handleScheduleMeeting}
-                className="py-2 px-4 bg-[#646cff] text-white font-semibold rounded-md hover:bg-[#535bf2] transition-colors flex items-center gap-2"
+                className="py-2 px-2 bg-[#646cff] text-white font-semibold rounded-md hover:bg-[#535bf2] transition-colors flex items-center gap-2"
               >
                 <FaCalendarAlt /> Schedule Meeting
               </button>

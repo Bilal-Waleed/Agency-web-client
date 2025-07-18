@@ -348,47 +348,61 @@ const AdminOrders = ({ scrollRef }) => {
                             Order Completed
                           </Typography>
                         ) : (
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => openCancelModal(order._id)}
-                              variant="contained"
-                              size="small"
-                              sx={{
-                                textTransform: 'none',
-                                fontWeight: 'medium',
+                          <div className="flex gap-2 mt-2">
+                          <Button
+                            onClick={() => openCancelModal(order._id)}
+                            variant="contained"
+                            size="small"
+                            sx={{
+                              textTransform: 'none',
+                              fontWeight: 'medium',
+                              fontSize: {
+                                xs: '0.6rem', 
+                                sm: '0.7rem',
+                                md: '0.8rem', 
+                                lg: '0.9rem', 
+                              },
+                              backgroundColor: theme === 'light' ? '#dc2626' : '#ef4444',
+                              '&:hover': {
                                 backgroundColor: theme === 'light' ? '#dc2626' : '#ef4444',
-                                '&:hover': {
-                                  backgroundColor: theme === 'light' ? '#dc2626' : '#ef4444',
-                                  transform: 'scale(1.05)',
-                                  transition: 'all 0.2s ease-in-out',
-                                },
-                                width: 'fit-content',
-                              }}
-                            >
-                              Cancel Order
-                            </Button>
-                            <Button
-                              onClick={() => openCompleteModal(order._id)}
-                              variant="outlined"
-                              size="small"
-                              sx={{
-                                textTransform: 'none',
-                                fontWeight: 'medium',
-                                color: '#10B981',
+                                transform: 'scale(1.05)',
+                                transition: 'all 0.2s ease-in-out',
+                              },
+                              width: 'fit-content',
+                            }}
+                          >
+                            Cancel Order
+                          </Button>
+
+                          <Button
+                            onClick={() => openCompleteModal(order._id)}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              textTransform: 'none',
+                              fontWeight: 'medium',
+                              color: '#10B981',
+                              fontSize: {
+                                xs: '0.6rem',
+                                sm: '0.7rem',
+                                md: '0.8rem',
+                                lg: '0.9rem',
+                              },
+                              borderColor: '#10B981',
+                              '&:hover': {
+                                backgroundColor: theme === 'light' ? '#d1fae5' : '#064e3b',
                                 borderColor: '#10B981',
-                                '&:hover': {
-                                  backgroundColor: theme === 'light' ? '#d1fae5' : '#064e3b',
-                                  borderColor: '#10B981',
-                                  color: theme === 'light' ? '#059669' : '#6ee7b7',
-                                  transform: 'scale(1.05)',
-                                  transition: 'all 0.2s ease-in-out',
-                                },
-                                width: 'fit-content',
-                              }}
-                            >
-                              Complete Order
-                            </Button>
-                          </div>
+                                color: theme === 'light' ? '#059669' : '#6ee7b7',
+                                transform: 'scale(1.05)',
+                                transition: 'all 0.2s ease-in-out',
+                              },
+                              width: 'fit-content',
+                            }}
+                          >
+                            Complete Order
+                          </Button>
+                        </div>
+
                         )}
                       </div>
                     </div>

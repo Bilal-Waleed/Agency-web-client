@@ -201,7 +201,7 @@ const AdminDashboard = () => {
                 Admin Dashboard
                 <div className="w-24 h-1 bg-[#646cff] mt-2 rounded"></div>
               </h1>
-              <div className="flex gap-2 items-center justify-end flex-wrap w-full sm:w-auto">
+              <div className="flex gap-2 items-center justify-end flex-wrap w-full sm:w-auto mt-2">
                 <div className="relative w-[120px] sm:w-[140px]">
                   <DatePicker
                     ref={startRef}

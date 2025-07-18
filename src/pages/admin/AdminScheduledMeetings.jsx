@@ -298,11 +298,19 @@ useEffect(() => {
                     sx={{
                       textTransform: 'none',
                       fontWeight: 'medium',
+                      fontSize: {
+                        xs: '0.6rem',
+                        sm: '0.7rem', 
+                        md: '0.8rem', 
+                        lg: '0.9rem', 
+                      },
                       borderColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
                       color: theme === 'light' ? '#3b82f6' : '#60a5fa',
                       '&:hover': {
                         borderColor: theme === 'light' ? '#2563eb' : '#3b82f6',
-                        backgroundColor: theme === 'light' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(96, 165, 250, 0.1)',
+                        backgroundColor: theme === 'light'
+                          ? 'rgba(59, 130, 246, 0.1)'
+                          : 'rgba(96, 165, 250, 0.1)',
                         transform: 'scale(1.02)',
                         transition: 'all 0.2s ease-in-out',
                       },
@@ -313,8 +321,8 @@ useEffect(() => {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          ))} 
+          </div>
         <div className="mt-6">
           <Stack spacing={2} alignItems="center">
             <Pagination
