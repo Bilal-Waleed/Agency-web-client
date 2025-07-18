@@ -485,12 +485,17 @@ const Order = () => {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: 400,
+            width: {
+              xs: '90%',  
+              sm: 400,    
+            },
             bgcolor: theme === 'light' ? 'white' : 'grey.900',
             color: theme === 'light' ? 'black' : 'white',
             boxShadow: 24,
             p: 4,
             borderRadius: 2,
+            maxHeight: '90vh',
+            overflowY: 'auto',     
           }}
         >
           <Typography id="payment-modal-title" variant="h6" component="h2">
@@ -509,7 +514,17 @@ const Order = () => {
             <Button
               onClick={handlePayment}
               variant="contained"
-              sx={{ bgcolor: '#646cff', '&:hover': { bgcolor: '#535bf2' } }}
+              sx={{
+                bgcolor: '#646cff',
+                fontSize: {
+                  xs: '0.7rem',
+                  sm: '0.8rem', 
+                  md: '0.9rem',  
+                },
+                '&:hover': {
+                  bgcolor: '#535bf2',
+                },
+              }}
               disabled={loading}
             >
               {loading ? 'Processing...' : 'Proceed to Payment'}
