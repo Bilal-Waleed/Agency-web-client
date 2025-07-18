@@ -112,7 +112,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
       aria-describedby="orders-modal-description"
     >
       <div
-        className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm`}
+        className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm px-4 sm:px-0`}
         onClick={onClose}
       >
         <div
@@ -217,6 +217,7 @@ const OrdersModal = ({ theme, isOpen, onClose, user }) => {
                         mt: 2,
                         mb: 1,
                         color: theme === 'light' ? '#10B981' : '#34D399',
+                        fontSize: '0.875rem',
                         fontWeight: 'medium',
                       }}
                     >

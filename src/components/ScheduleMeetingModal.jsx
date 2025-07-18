@@ -91,7 +91,7 @@ const ScheduleMeetingModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 px-4 sm:px-0"> 
       <div
         className={`p-6 rounded-lg shadow-lg max-w-md w-full ${
           theme === 'light' ? 'bg-white text-black' : 'bg-gray-800 text-white'
