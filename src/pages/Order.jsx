@@ -79,7 +79,7 @@ const Order = () => {
   const calculateHalfPayment = (budget) => {
     if (!budget) return 0;
     const [min, max] = budget.replace(/\$/g, '').split('-').map((val) => parseFloat(val.trim()) || 0);
-    if (budget.includes('+')) return 2500;
+    if (budget.includes('+')) return 3000;
     const average = (min + (max || min)) / 2;
     return average * 0.5;
   };
