@@ -20,7 +20,7 @@ const OrderSuccess = () => {
   }, []);
 
   useEffect(() => {
-    const verifyPaymentAndSaveOrder = async () => {
+    const verifyPayment = async () => {
       try {
         if (!sessionId) {
           showToast('Invalid payment session.', 'error');
@@ -28,30 +28,59 @@ const OrderSuccess = () => {
           return;
         }
 
-        const response = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/order/finalize`,
-          { sessionId },
+        // Check session
+        const checkResponse = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/order/check-session/${sessionId}`,
           {
             headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${Cookies.get("token")}`,
+              Authorization: `Bearer ${Cookies.get('token')}`,
             },
           }
         );
 
-        showToast('Payment successful! Your order has been submitted.', 'success');
-        console.log('Order saved:', response.data);
+        const { isRemainingPayment, success, error } = checkResponse.data;
+
+        if (error) {
+          showToast(error, 'error');
+          navigate('/');
+          return;
+        }
+
+        if (!success) {
+          showToast('Payment verification failed.', 'error');
+          navigate('/');
+          return;
+        }
+
+        if (!isRemainingPayment) {
+          // Initial payment: call /finalize
+          const finalizeResponse = await axios.post(
+            `${import.meta.env.VITE_BACKEND_URL}/api/order/finalize`,
+            { sessionId },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${Cookies.get('token')}`,
+              },
+            }
+          );
+          console.log('Finalize response:', finalizeResponse.data);
+          showToast('Payment successful! Your order has been submitted.', 'success');
+        } else {
+          showToast('Remaining payment successful! Your order has been completed.', 'success');
+        }
+
         sessionStorage.removeItem('pendingOrderData');
         setTimeout(() => navigate('/order'), 3000);
       } catch (error) {
-        console.error('Error finalizing order:', error.response?.data || error.message);
-        showToast('Error verifying payment or saving order.', 'error');
+        console.error('Error verifying payment:', error.response?.data || error.message);
+        showToast(error.response?.data?.error || 'Error verifying payment.', 'error');
         sessionStorage.removeItem('pendingOrderData');
         navigate('/');
       }
     };
 
-    verifyPaymentAndSaveOrder();
+    verifyPayment();
 
     return () => {
       sessionStorage.removeItem('pendingOrderData');
@@ -80,9 +109,9 @@ const OrderSuccess = () => {
             Processing Payment<span className="inline-block">{dots}</span>
           </h2>
           <p className="text-lg mb-6">
-            Please wait while we verify your payment and save your order. You'll be redirected to the order page shortly.
+            Please wait while we verify your payment. You'll be redirected to the order page shortly.
           </p>
-          <style jsx>{`
+          <style>{`
             @keyframes dots {
               0% { opacity: 0; }
               50% { opacity: 1; }

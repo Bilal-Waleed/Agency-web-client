@@ -121,7 +121,8 @@ const AdminOrders = ({ scrollRef }) => {
       const formData = new FormData();
       formData.append('message', message || '');
       files.forEach((file) => formData.append('files', file));
-      await axios.post(
+
+      const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/admin/orders/${orderId}/complete`,
         formData,
         {
@@ -131,7 +132,8 @@ const AdminOrders = ({ scrollRef }) => {
           },
         }
       );
-      showToast('Your response sent successfully', 'success');
+
+      showToast(response.data.message || 'Order completion initiated. Payment link sent to user.', 'success');
       fetchOrders(false);
     } catch (error) {
       console.error('Error completing order:', error);
@@ -156,12 +158,17 @@ const AdminOrders = ({ scrollRef }) => {
     }
 
     socket.on('orderChange', handleOrderChange);
+    socket.on('orderCompleted', (data) => {
+      showToast(`Order ${data.orderId} completed`, 'success');
+      fetchOrders(false);
+    });
     socket.on('connect_error', () => {
       showToast('Internet disconnected. Please check your connection.', 'error');
     });
 
     return () => {
       socket.off('orderChange', handleOrderChange);
+      socket.off('orderCompleted');
       socket.off('connect_error');
     };
   }, [user, navigate, page, activeTab]);
@@ -184,29 +191,29 @@ const AdminOrders = ({ scrollRef }) => {
   };
 
   const OrderCardSkeleton = () => {
-  return (
-    <div
-      className={`flex flex-wrap sm:flex-nowrap gap-4 p-6 rounded-lg ${
-        theme === 'light' ? 'bg-white shadow-lg border border-gray-200' : 'bg-gray-800 shadow-xl border border-gray-700'
-      }`}
-    >
-      <Skeleton
-        variant="circular"
-        width={48}
-        height={48}
-        sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
-      />
-      <div className="flex flex-col flex-grow gap-2">
-        <Skeleton variant="text" width="40%" height={30} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
-        <Skeleton variant="text" width="60%" height={28} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
-        <Skeleton variant="text" width="55%" height={26} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
-        <Skeleton variant="text" width="50%" height={26} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
-        <Skeleton variant="text" width="70%" height={26} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
-        <Skeleton variant="rectangular" width={120} height={36} sx={{ borderRadius: 1, bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+    return (
+      <div
+        className={`flex flex-wrap sm:flex-nowrap gap-4 p-6 rounded-lg ${
+          theme === 'light' ? 'bg-white shadow-lg border border-gray-200' : 'bg-gray-800 shadow-xl border border-gray-700'
+        }`}
+      >
+        <Skeleton
+          variant="circular"
+          width={48}
+          height={48}
+          sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }}
+        />
+        <div className="flex flex-col flex-grow gap-2">
+          <Skeleton variant="text" width="40%" height={30} sx={{ bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+          <Skeleton variant="text" width="60%" height={28} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+          <Skeleton variant="text" width="55%" height={26} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+          <Skeleton variant="text" width="50%" height={26} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+          <Skeleton variant="text" width="70%" height={26} sx={{ bgcolor: theme === 'light' ? 'grey.200' : 'grey.700' }} />
+          <Skeleton variant="rectangular" width={120} height={36} sx={{ borderRadius: 1, bgcolor: theme === 'light' ? 'grey.300' : 'grey.700' }} />
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const getAvatarUrl = (item) => {
     return item?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}`;
