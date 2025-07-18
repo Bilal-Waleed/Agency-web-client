@@ -50,7 +50,7 @@ const TopBar = () => {
           )}
         </IconButton>
       </div>
-      <div className="flex items-center gap-4 relative">
+      <div className="flex items-center gap-6 relative">
         <Notification />
         <div
           className="relative"
