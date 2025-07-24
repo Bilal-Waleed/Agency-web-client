@@ -28,6 +28,7 @@ const validationSchema = Yup.object({
     .required('Timeline is required'),
   projectDescription: Yup.string()
     .min(10, 'Project description must be at least 10 characters')
+    .max(200, 'Project description must be less than 200 characters')
     .required('Project description is required'),
   paymentReference: Yup.string().required('Payment reference is required'),
   paymentMethod: Yup.string().required('Payment method is required'),
@@ -170,6 +171,8 @@ const Order = () => {
       setLoading(false);
     }
   };
+
+  const maxDescriptionLength = 200;
 
   return (
     <div
@@ -388,7 +391,11 @@ const Order = () => {
                 value={formData.projectDescription}
                 onChange={handleChange}
                 disabled={loading}
+                maxLength={maxDescriptionLength}
               ></textarea>
+              <div className="text-sm mt-1">
+                {formData.projectDescription.length}/{maxDescriptionLength} characters
+              </div>
               {errors.projectDescription && (
                 <div className="text-red-500 text-sm mt-1">{errors.projectDescription}</div>
               )}
@@ -486,8 +493,8 @@ const Order = () => {
             left: '50%',
             transform: 'translate(-50%, -50%)',
             width: {
-              xs: '90%',  
-              sm: 400,    
+              xs: '90%',
+              sm: 400,
             },
             bgcolor: theme === 'light' ? 'white' : 'grey.900',
             color: theme === 'light' ? 'black' : 'white',
@@ -495,7 +502,7 @@ const Order = () => {
             p: 4,
             borderRadius: 2,
             maxHeight: '90vh',
-            overflowY: 'auto',     
+            overflowY: 'auto',
           }}
         >
           <Typography id="payment-modal-title" variant="h6" component="h2">
@@ -518,8 +525,8 @@ const Order = () => {
                 bgcolor: '#646cff',
                 fontSize: {
                   xs: '0.7rem',
-                  sm: '0.8rem', 
-                  md: '0.9rem',  
+                  sm: '0.8rem',
+                  md: '0.9rem',
                 },
                 '&:hover': {
                   bgcolor: '#535bf2',
