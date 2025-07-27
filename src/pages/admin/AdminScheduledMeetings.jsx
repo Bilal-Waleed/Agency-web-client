@@ -119,7 +119,6 @@ useEffect(() => {
   return () => {
     socket.off('meetingChange', handleMeetingChange);
     socket.off('meetingUI', handleMeetingUIUpdate); 
-    socket.off('connect_error');
   };
 }, []);
   const handleAcceptMeeting = async (meetingId) => {
